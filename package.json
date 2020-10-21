@@ -1,0 +1,29 @@
+{
+  "name": "brainstorm",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "bcijs": "^1.8.0",
+    "cookie-parser": "~1.4.4",
+    "debug": "~2.6.9",
+    "express": "~4.16.1",
+    "http-errors": "~1.6.3",
+    "mongodb": "^3.6.2",
+    "morgan": "~1.9.1",
+    "pug": "2.0.0-beta11",
+    "socket.io": "^2.3.0"
+  },
+  "description": "Visualizing brain data on the web",
+  "main": "app.js",
+  "devDependencies": {},
+  "keywords": [
+    "sockets",
+    "node",
+    "brainflow"
+  ],
+  "author": "Garrett Flynn",
+  "license": "MIT"
+}
