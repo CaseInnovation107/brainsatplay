@@ -1,120 +1,88 @@
-var express = require('express')
-var app = express();
-var fs = require('fs')
-var debug = require('debug')('myexpressapp:server');
-var server = require('http').createServer(app);
-var io = require('socket.io')(server);
-var bci = require('bcijs');
-
+var express = require('express');
+var path = require('path');
+var favicon = require('serve-favicon');
+var logger = require('morgan');
+var cookieParser = require('cookie-parser');
+var bodyParser = require('body-parser');
+var hbs = require('express-handlebars');
 
 // MongoDB
 const MongoClient = require('mongodb').MongoClient;
-const uri = "mongodb+srv://garrett-m-flynn:107081654029GmF@cluster0.bdgxr.mongodb.net/test?retryWrites=true&w=majority";
-const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true  });
-let chat_db; // = client.db("interaction_data").collection("chat");
+var objectId = require('mongodb').ObjectID;
+var assert = require('assert');
+const uri = "mongodb+srv://default-user:JgMmIChJd7IoyOJY@cluster0.bdgxr.mongodb.net/brains-and-games?retryWrites=true&w=majority";
+const client = new MongoClient(uri, { useNewUrlParser: true ,  useUnifiedTopology: true});
+let submission_db;
 
 client.connect(err => {
-  chat_db = client.db("brains-and-games").collection("submissions");
-  // client.close();
+  submission_db = client.db("brains-and-games").collection("submissions");
+  // const collection = client.db("test").collection("devices");
 });
 
-// Websocket
-var port = normalizePort(process.env.PORT || '80');
+// App
+var app = express();
 
+// view engine setup
+app.engine('hbs', hbs({extname: 'hbs', defaultLayout: 'layout', layoutsDir: __dirname + '/views/layouts/'}));
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'hbs');
 
-app.use(express.static('public'))
+// uncomment after placing your favicon in /public
+//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+app.use(logger('dev'));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, 'public')));
 
-io.on('connection', (socket) => {
-    console.log('new connection: ' + socket.id);
+// app.use('/', routes);
 
-    socket.on('bci',bciSignal)
+// app.get('/', function(request, response) {
+//   console.log('GET /')
+//   var resultArray = [];
+//   client.connect(err => {
+//     assert.equal(null, err);
+//     var cursor = client.db("brains-and-games").collection('submissions').find();
+//     cursor.forEach(function(doc, err) {
+//       assert.equal(null, err);
+//       resultArray.push(doc);
+//     }, function() {
+//       res.render('index', {items: resultArray});
+//     });
+// })
+// })
 
-    function bciSignal(data){
-        socket.broadcast.emit('bci', data)
-    }
+app.post('/', function(request, response) {
+  console.log('POST /');
+  client.connect(err => {
+    assert.equal(null, err);
+    submission_db.insertOne(request.body)
+  })
+})
 
-    socket.on('chat message', (msg) => {
-      io.emit('chat message', msg);
-      console.log('msg: ' + msg)
+// error handlers
 
-      chat_db.insertOne(
-          { "msg" : msg,
-            "sender" : "Anonymous",
-            "timestamp" : Date.now(),
-          }
-      )
+// development error handler
+// will print stacktrace
+if (app.get('env') === 'development') {
+  app.use(function(err, req, res, next) {
+    res.status(err.status || 500);
+    res.render('error', {
+      message: err.message,
+      error: err
     });
   });
+}
 
-app.set('port', port);
-
-server.listen(parseInt(port), () => {
-  console.log('listening on *:' + port);
+// production error handler
+// no stacktraces leaked to user
+app.use(function(err, req, res, next) {
+  res.status(err.status || 500);
+  res.render('error', {
+    message: err.message,
+    error: {}
+  });
 });
 
-server.on('error', onError);
-server.on('listening', onListening);
 
-console.log('My socket server is running')
-
-
-/**
- * Normalize a port into a number, string, or false.
- */
-
-function normalizePort(val) {
-  var port = parseInt(val, 10);
-
-  if (isNaN(port)) {
-    // named pipe
-    return val;
-  }
-
-  if (port >= 0) {
-    // port number
-    return port;
-  }
-
-  return false;
-}
-
-/**
- * Event listener for HTTP server "error" event.
- */
-
-function onError(error) {
-  if (error.syscall !== 'listen') {
-    throw error;
-  }
-
-  var bind = typeof port === 'string'
-    ? 'Pipe ' + port
-    : 'Port ' + port;
-
-  // handle specific listen errors with friendly messages
-  switch (error.code) {
-    case 'EACCES':
-      console.error(bind + ' requires elevated privileges');
-      process.exit(1);
-      break;
-    case 'EADDRINUSE':
-      console.error(bind + ' is already in use');
-      process.exit(1);
-      break;
-    default:
-      throw error;
-  }
-}
-
-/**
- * Event listener for HTTP server "listening" event.
- */
-
-function onListening() {
-  var addr = server.address();
-  var bind = typeof addr === 'string'
-    ? 'pipe ' + addr
-    : 'port ' + addr.port;
-  debug('Listening on ' + bind);
-}
-
+module.exports = app;
