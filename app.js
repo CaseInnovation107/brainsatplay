@@ -21,15 +21,16 @@ var io = require('socket.io')(server);
 const MongoClient = require('mongodb').MongoClient;
 var objectId = require('mongodb').ObjectID;
 var assert = require('assert');
-const uri = "mongodb+srv://default-user:JgMmIChJd7IoyOJY@cluster0.bdgxr.mongodb.net";
-const client = new MongoClient(uri, { useNewUrlParser: true ,  useUnifiedTopology: true});
+const uri = "mongodb+srv://default-user:JgMmIChJd7IoyOJY@cluster0.bdgxr.mongodb.net/test?retryWrites=true&w=majority";
 let submission_db;
 let chat_db;
 
-client.connect(err => {
-  submission_db = client.db("brains-and-games").collection("submissions");
-  chat_db = client.db("livewire").collection("chat");
-});
+MongoClient.connect(uri, { useUnifiedTopology: true })
+  .then(client => {
+    console.log('Connected to Database')
+    submission_db = client.db("brains-and-games").collection("submissions");
+    chat_db = client.db("livewire").collection("chat");
+  })
 
 // Listen to Port
 var port = normalizePort(process.env.PORT || '80');
@@ -54,6 +55,10 @@ app.use(function(req, res, next) {
   next();
 });
 
+app.get('/', (req, res) => {
+  res.send('Hello World')
+})
+
 // app.get('/', function(request, response) {
 //   console.log('GET /')
 //   var resultArray = [];
@@ -70,14 +75,14 @@ app.use(function(req, res, next) {
 // })
 // })
 
-app.post('/', function(request, response) {
-  console.log('POST /');
-  response.set('Access-Control-Allow-Origin', '*');
-  client.connect(err => {
-    assert.equal(null, err);
-    submission_db.insertOne(request.body)
-  })
+app.post('/', (req, res) => {
+  submission_db.insertOne(req.body)
 })
+
+// app.post('/', function(request, response) {
+//   console.log('POST /');
+//     submission_db.insertOne(request.body)
+// })
 
 // Listen for Websocket Connections
 io.on('connection', (socket) => {
