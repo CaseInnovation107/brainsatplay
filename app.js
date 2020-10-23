@@ -77,6 +77,7 @@ app.get('/', (req, res) => {
 
 app.post('/', (req, res) => {
   submission_db.insertOne(req.body)
+  console.log(req)
 })
 
 // app.post('/', function(request, response) {
