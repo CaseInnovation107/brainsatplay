@@ -4,6 +4,7 @@ const homeController = require("../controllers/home");
 const uploadController = require("../controllers/upload");
 const submitController = require("../controllers/submit");
 const getFileController = require("../controllers/getFile");
+const getSubmissionsController = require("../controllers/getSubmissions");
 
 
 
@@ -13,9 +14,10 @@ let routes = app => {
   router.post("/submit", submitController.submitGame);
 
   router.post("/upload", uploadController.uploadFiles);
-  
-  router.get('/getfile', homeController.getHome);
-  router.post("/getfile", getFileController.getFile);
+
+    router.get('/getsubmissions', homeController.getHome);
+  router.post("/getsubmissions", getSubmissionsController.getSubmissions);
+
 
 
 
