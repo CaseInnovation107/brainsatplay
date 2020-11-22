@@ -7,6 +7,7 @@
   },
   "dependencies": {
     "body-parser": "^1.19.0",
+    "connect-mongodb-session": "^2.4.1",
     "cookie-parser": "~1.3.5",
     "cors": "^2.8.5",
     "debug": "~2.2.0",
@@ -14,6 +15,7 @@
     "ejs": "^3.1.5",
     "express": "^4.17.1",
     "express-handlebars": "^3.0.0",
+    "express-session": "^1.17.1",
     "http-errors": "~1.6.3",
     "mongodb": "^3.6.2",
     "mongoose": "^5.10.10",
@@ -21,7 +23,12 @@
     "multer": "^1.4.2",
     "multer-gridfs-storage": "^4.2.0",
     "serve-favicon": "^2.5.0",
-    "socket.io": "^2.3.0"
+    "uuid": "^8.3.1",
+    "ws": "^7.4.0"
   },
-  "main": "app.js"
+  "main": "app.js",
+  "optionalDependencies": {
+    "bufferutil": "^4.0.2",
+    "utf-8-validate": "^5.0.3"
+  }
 }

@@ -1,4 +1,3 @@
-const MongoClient = require('mongodb').MongoClient;
 var bodyParser = require('body-parser');
 
 //I used an mlab Sandbox DB. Substitute the details with your own

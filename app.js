@@ -1,21 +1,30 @@
-var express = require('express');
-var debug = require('debug')('myexpressapp:server');
-var path = require('path');
-var favicon = require('serve-favicon');
-var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
-var hbs = require('express-handlebars');
+const express = require('express');
+const session = require('express-session');
+const MongoDBStore = require('connect-mongodb-session')(session);
+const debug = require('debug')('myexpressapp:server');
+const path = require('path');
+const favicon = require('serve-favicon');
+const logger = require('morgan');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
+const hbs = require('express-handlebars');
+const WebSocket = require('ws');
 
+
+// Listen to Port
+const url = 'localhost'
+var port = normalizePort(process.env.PORT || '80');
+
+//
 // App
-var app = express();
-var server = require('http').createServer(app);
+//
+
+const app = express();
+const map = new Map();
+app.set('map', map);
 
 //CORS
-app.use(require("cors")()) // allow Cross-domain requests 
-
-//Websockets
-var io = require('socket.io')(server);
+app.use(require("cors")()) // allow Cross-domain requests
 
 // MongoDB
 const MongoClient = require('mongodb').MongoClient;
@@ -35,8 +44,21 @@ MongoClient.connect(uri, { useUnifiedTopology: true })
     collectionChunks = client.db("brains-and-games").collection('photos.chunks');
   })
 
-// Listen to Port
-var port = normalizePort(process.env.PORT || '80');
+// Cookies
+const store = new MongoDBStore({
+  uri: uri,
+  collection: 'sessions'
+});
+
+let sessionParser = session({
+  secret: 'secret string',
+  resave: true,
+  saveUninitialized: true,
+  store: store, /* store session data in mongodb */
+  cookie: { /* can add cookie related info here */ }
+})
+
+app.use(sessionParser)
 
 // view engine setup
 app.engine('hbs', hbs({extname: 'hbs', defaultLayout: 'layout', layoutsDir: __dirname + '/views/layouts/'}));
@@ -51,39 +73,18 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 //Listen to Port for HTTP Requests
 app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*"); // update to match the domain you will make the request from
+  // res.header("Access-Control-Allow-Origin", "https://brainsatplay.com");//, brainsatplay.com, mousaineuro.com"); // update to match the domain you will make the request from
+  res.header("Access-Control-Allow-Origin", "http://localhost.com");//, brainsatplay.com, mousaineuro.com"); // update to match the domain you will make the request from
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Methods",
+      "GET, POST, PATCH, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Credentials", "true");
   next();
 });
 
 // Set Routes
 const initRoutes = require("./routes/web");
 initRoutes(app);
-
-// Listen for Websocket Connections
-io.on('connection', (socket) => {
-  console.log('new connection: ' + socket.id);
-
-  socket.on('bci',bciSignal)
-
-  function bciSignal(data){
-      socket.broadcast.emit('bci', data)
-  }
-
-  socket.on('chat message', (msg) => {
-    io.emit('chat message', msg);
-    console.log('msg: ' + msg) 
-    chat_db.insertOne(
-          { "msg" : msg,
-            "sender" : socket.id,
-            "timestamp" : Date.now(),
-          }
-      )
-  });
-});
-
-// error handlers
 
 // development error handler
 // will print stacktrace
@@ -103,6 +104,76 @@ app.use(function(err, req, res, next) {
 
 app.set('port', port);
 
+//
+// Server
+//
+const server = require('http').createServer(app);
+
+// Websocket
+const wss = new WebSocket.Server({ clientTracking: false, noServer: true });
+
+//Authentication
+server.on('upgrade', function (request, socket, head) {
+  console.log('Parsing session from request...');
+
+  sessionParser(request, {}, () => {
+    if (!request.session.userId) {
+      console.log('HTTP/1.1 401 Unauthorized')
+      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+
+    console.log('Session is parsed!');
+    console.log('upgrading userId: ' + request.session.userId)
+
+
+    wss.handleUpgrade(request, socket, head, function (ws) {
+      wss.emit('connection', ws, request);
+    });
+  });
+});
+
+wss.on('connection', function (ws, request) {
+  const userId = request.session.userId;
+  console.log('connecting userId: ' + request.session.userId)
+
+  app.get('map').set(userId, ws);
+
+  ws.on('message', function (str) {
+    let obj = JSON.parse(str);
+    if (obj.destination == 'chat'){
+      // Broadcast to all clients
+      app.get('map').forEach(function each(client, id) {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(str);
+        }
+      });
+      chat_db.insertOne(
+          { "msg" : obj.msg,
+            "sender" : userId,
+            "timestamp" : Date.now(),
+          }
+      )
+    } if (obj.destination == 'bci'){
+      // Broadcast to all clients EXCEPT YOURSELF
+      app.get('map').forEach(function each(client, id) {
+        if (id != userId) {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(str);
+          }
+        }
+      })};
+  });
+
+  ws.on('close', function () {
+    console.log('closing user: ' + userId)
+    map.delete(userId);
+  });
+});
+
+// error handlers
+
 server.listen(parseInt(port), () => {
   console.log('listening on *:' + port);
 });
@@ -110,7 +181,7 @@ server.listen(parseInt(port), () => {
 server.on('error', onError);
 server.on('listening', onListening);
 
-console.log('Server is running on http://localhost')
+console.log('Server is running on http://' + url + ':' + port)
 
 
 /**

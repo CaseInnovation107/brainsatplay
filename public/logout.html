@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+</head>
+<body>
+<h1>You have been logged out.</h1>
+</body>
+<script>
+    fetch('/logout', { method: 'DELETE',
+        credentials: 'same-origin' })
+        .then(handleResponse)
+        .then(showMessage)
+        .catch(function (err) {
+            showMessage(err.message);
+        });
+</script>
+</html>
