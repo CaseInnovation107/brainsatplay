@@ -1,3 +1,4 @@
+const fs = require('fs');
 const express = require('express');
 const session = require('express-session');
 const MongoDBStore = require('connect-mongodb-session')(session);
@@ -10,10 +11,21 @@ const bodyParser = require('body-parser');
 const hbs = require('express-handlebars');
 const WebSocket = require('ws');
 
+let protocol = 'http' // 'https'
+let webSocketType = 'serverless'
+
+// const https = require('https')
+const http = require(protocol) 
+
 
 // Listen to Port
 const url = 'localhost'
+
+if (protocol == 'http'){
 var port = normalizePort(process.env.PORT || '80');
+} else {
+  var port = normalizePort(process.env.PORT || '443');
+}
 
 //
 // App
@@ -72,9 +84,21 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 //Listen to Port for HTTP Requests
+
+
 app.use(function(req, res, next) {
-  // res.header("Access-Control-Allow-Origin", "https://brainsatplay.com");//, brainsatplay.com, mousaineuro.com"); // update to match the domain you will make the request from
-  res.header("Access-Control-Allow-Origin", "http://localhost.com");//, brainsatplay.com, mousaineuro.com"); // update to match the domain you will make the request from
+  const validOrigins = [
+    `http://localhost`,
+    'https://brainsatplay.azurewebsites.net/',
+    'https://brainsatplay.com',
+    'https://mousaineuro.com',
+    'http://97.90.237.21' ];
+  const origin = req.headers.origin;
+
+  if (validOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   res.header("Access-Control-Allow-Methods",
       "GET, POST, PATCH, PUT, DELETE, OPTIONS");
@@ -107,10 +131,22 @@ app.set('port', port);
 //
 // Server
 //
-const server = require('http').createServer(app);
+let server; 
+if (protocol == 'http'){    
+  server = http.createServer(app);  
+} else {
+  const key = fs.readFileSync(path.join(__dirname,'public','assets','keys','key-rsa.pem'));
+  const cert = fs.readFileSync(path.join(__dirname,'public','assets','keys','cert.pem'));
+  server = https.createServer({ key, cert }, app); 
+}   
 
 // Websocket
-const wss = new WebSocket.Server({ clientTracking: false, noServer: true });
+let wss;
+if (webSocketType == 'serverless'){
+wss = new WebSocket.Server({ clientTracking: false, noServer: true });
+} else{
+wss = new WebSocket.Server( {server:server});
+}
 
 //Authentication
 server.on('upgrade', function (request, socket, head) {
@@ -181,7 +217,7 @@ server.listen(parseInt(port), () => {
 server.on('error', onError);
 server.on('listening', onListening);
 
-console.log('Server is running on http://' + url + ':' + port)
+console.log(`Server is running on ${protocol}://${url}:${port}`)
 
 
 /**
