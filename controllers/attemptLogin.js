@@ -6,9 +6,12 @@ module.exports.attemptLogin = async (req, res) => {
     //
     const id = uuid.v4();
 
-    console.log(`Updating session for user ${id}`);
-    req.session.userId = id;
-    console.log('adding userId: ' + req.session.userId)
+    console.log(req)
 
-    res.send({ result: 'OK', message: 'Session updated' });
+    console.log(`Updating session for user ${id}`);
+
+    // req.session.userId = id;
+    console.log('adding userId: ' + id)
+    req.session.userId = id;
+    res.send({ result: 'OK', message: 'Session updated with UserId: ' + id });
   };

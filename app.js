@@ -6,8 +6,9 @@ const debug = require('debug')('myexpressapp:server');
 const path = require('path');
 const favicon = require('serve-favicon');
 const logger = require('morgan');
-const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
+
 const hbs = require('express-handlebars');
 const WebSocket = require('ws');
 
@@ -67,7 +68,10 @@ let sessionParser = session({
   resave: true,
   saveUninitialized: true,
   store: store, /* store session data in mongodb */
-  cookie: { /* can add cookie related info here */ }
+  cookie: { 
+    secure: false ,
+    sameSite: false ,
+    maxAge: 1000 * 60 * 60 * 24 * 7}
 })
 
 app.use(sessionParser)
@@ -80,8 +84,10 @@ app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+
+// if (!(process.env.NODE_ENV === 'development')) {
+//   app.set('trust proxy', 1);
+// }
 
 //Listen to Port for HTTP Requests
 
@@ -89,14 +95,20 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(function(req, res, next) {
   const validOrigins = [
     `http://localhost`,
-    'https://brainsatplay.azurewebsites.net/',
+    'https://brainsatplay.azurewebsites.net',
+    'http://brainsatplay.azurewebsites.net',
     'https://brainsatplay.com',
-    'https://mousaineuro.com',
-    'http://97.90.237.21' ];
+    // '*',
+    'http://97.90.237.21',
+    'http://97.90.237.21:63342'
+  ];
   const origin = req.headers.origin;
 
   if (validOrigins.includes(origin)) {
+    console.log('valid origin: ' + origin)
     res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    console.log('invalid origin: ' + origin)
   }
 
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -112,6 +124,7 @@ initRoutes(app);
 
 // development error handler
 // will print stacktrace
+console.log(app.get('env'))
 if (app.get('env') === 'development') {
   app.use(function(err, req, res, next) {
     res.status(err.status || 500);
@@ -126,6 +139,10 @@ app.use(function(err, req, res, next) {
   console.log('error')
 });
 
+// Static Middleware
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Setting the port
 app.set('port', port);
 
 //
@@ -153,7 +170,10 @@ server.on('upgrade', function (request, socket, head) {
   console.log('Parsing session from request...');
 
   sessionParser(request, {}, () => {
-    if (!request.session.userId) {
+    const userId =  request.session.userId
+    console.log(request.session)
+
+    if (!userId) {
       console.log('HTTP/1.1 401 Unauthorized')
       socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
       socket.destroy();
@@ -161,7 +181,7 @@ server.on('upgrade', function (request, socket, head) {
     }
 
     console.log('Session is parsed!');
-    console.log('upgrading userId: ' + request.session.userId)
+    console.log('upgrading userId: ' + userId)
 
 
     wss.handleUpgrade(request, socket, head, function (ws) {
@@ -171,8 +191,9 @@ server.on('upgrade', function (request, socket, head) {
 });
 
 wss.on('connection', function (ws, request) {
+
   const userId = request.session.userId;
-  console.log('connecting userId: ' + request.session.userId)
+  console.log('connecting userId: ' + userId)
 
   app.get('map').set(userId, ws);
 
