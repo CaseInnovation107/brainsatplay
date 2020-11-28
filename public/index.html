@@ -146,7 +146,7 @@
 
     // WebSocket Setup
     let messages = []
-    let option = 'local';
+    let option = 'server';
     let url;
     if (option  === 'local'){
         url = new URL('http://localhost');
@@ -160,7 +160,6 @@
 
     function showMessage(res) {
         // let userId = getCookie(res,'userId')
-        console.log(res.userId)
         if (res.userId != undefined){
             document.getElementById('userId').innerHTML = 'Client ID: ' + res.userId
         } else {
