@@ -42,6 +42,10 @@
         <div class="icon menuicon" onclick="openTutorial()">
             <a><i class="fas fa-book-open fa-2x"></i></a><p>Tutorial</p>
         </div>
+        <div class="user-info">
+            <h4>Your Info</h4>
+            <p id=userId></p>
+        </div>
 <!--        <div class="icon menuicon" onclick="window.open('https://github.com/Mousai-Neurotechnologies/brainstorm-client','mywindow');">-->
 <!--            <a><i class="fab fa-python fa-2x"></i></a><p>Download Python Client</p>-->
 <!--        </div>-->
@@ -142,25 +146,37 @@
 
     // WebSocket Setup
     let messages = []
-    let url = 'https://brainsatplay.azurewebsites.net/'
-    // let url = 'http://localhost'
-    let ws;
-    clientAction('/login','POST');
-    // let socket = io.connect((url))
-    // const ws = new WebSocket('wss://echo.websocket.org');
-    // const ws = new WebSocket('ws://' + url);
+    let option = 'local';
+    let url;
+    if (option  === 'local'){
+        url = new URL('http://localhost');
+    } else if (option === 'server'){
+        url = new URL('https://brainsatplay.azurewebsites.net/');
+    }
 
-    // const login = document.querySelector('#login');
-    // const logout = document.querySelector('#logout');
-    // const wsButton = document.querySelector('#wsButton');
+    let ws;
+    clientAction('login','POST');
+    
 
     function showMessage(res) {
-        console.log(`\n${res}`);
+        // let userId = getCookie(res,'userId')
+        console.log(res.userId)
+        if (res.userId != undefined){
+            document.getElementById('userId').innerHTML = 'Client ID: ' + res.userId
+        } else {
+            console.log(`\n${res}`);
+        }
+    }
+
+    function getCookie(req,name) {
+        const value = `; ${req.headers.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
     }
 
     function handleResponse(res) {
         return res.ok
-            ? res.json().then((data) => JSON.stringify(data, null, 2))
+            ? res.json().then((data) => data)
             : Promise.reject(new Error('Unexpected response'));
     }
 
@@ -168,8 +184,7 @@
         fetch(url + destination, { method: method,
             mode: 'cors',
             credentials: 'include'
-        })
-            .then(handleResponse)
+        }).then(handleResponse)
             .then(showMessage)
             .catch(function (err) {
                 showMessage(err.message);
@@ -182,8 +197,15 @@
             ws.close();
         }
 
-        let strippedURL = url.replace(/(^\w+:|^)\/\//, '');
-        ws = new WebSocket(`wss://` + strippedURL);
+        if (url.protocol == 'http:'){
+        ws = new WebSocket(`ws://` + url.hostname);
+        } else if (url.protocol == 'https:'){
+            ws = new WebSocket(`wss://` + url.hostname);
+        } else{
+            console.log('invalid protocol')
+            return
+        }
+
         ws.onerror = function () {
             showMessage('WebSocket error');
         };
@@ -198,12 +220,13 @@
                 $('#messages').append($('<li>').text(obj.msg));
             }
             else if (obj.destination == 'bci'){
-                passSignal(obj.data)
+                passSignal(obj)
             }
         };
 
         ws.onclose = function () {
             showMessage('WebSocket connection closed');
+            // document.getElementById('app').innerHTML = 'Websocket closed'
             ws = null;
         };
     }
@@ -339,11 +362,6 @@ loading...
 
         setTimeout(() => {}, 50000);
         particleBrain()
-    }
-
-    // Passing BCI data to WebGL visualization
-    function passSignal(data) {
-        other_signal = data.ts_filtered
     }
 
 </script>

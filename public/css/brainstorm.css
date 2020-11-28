@@ -112,6 +112,16 @@ button:hover{
     cursor: pointer;
 }
 
+#app-menu p{
+    font-size: 10px;
+}
+
+.user-info{
+    padding: 20px 25px;
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+
 
 #menu-toggle{
     left: 200px;
@@ -213,7 +223,6 @@ button i {
 
 .icon p{
     margin-left: 10px;
-    font-size: 10px;
 }
 
 .icon a:visited{

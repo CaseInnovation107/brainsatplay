@@ -74,14 +74,11 @@ let sessionParser = session({
     maxAge: 1000 * 60 * 60 * 24 * 7}
 })
 
-app.use(sessionParser)
-
 // view engine setup
 app.engine('hbs', hbs({extname: 'hbs', defaultLayout: 'layout', layoutsDir: __dirname + '/views/layouts/'}));
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'hbs');
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 app.use(logger('dev'));
+app.use(cookieParser())
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -105,10 +102,10 @@ app.use(function(req, res, next) {
   const origin = req.headers.origin;
 
   if (validOrigins.includes(origin)) {
-    console.log('valid origin: ' + origin)
+    // console.log('valid origin: ' + origin)
     res.setHeader('Access-Control-Allow-Origin', origin);
   } else {
-    console.log('invalid origin: ' + origin)
+    // console.log('invalid origin: ' + origin)
   }
 
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -165,68 +162,98 @@ wss = new WebSocket.Server({ clientTracking: false, noServer: true });
 wss = new WebSocket.Server( {server:server});
 }
 
+function getCookie(req,name) {
+  const value = `; ${req.headers.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
 //Authentication
 server.on('upgrade', function (request, socket, head) {
   console.log('Parsing session from request...');
 
-  sessionParser(request, {}, () => {
-    const userId =  request.session.userId
-    console.log(request.session)
+    const userId =  getCookie(request,'userId')
 
     if (!userId) {
-      console.log('HTTP/1.1 401 Unauthorized')
       socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
       socket.destroy();
       return;
     }
-
-    console.log('Session is parsed!');
-    console.log('upgrading userId: ' + userId)
-
-
+    let command;
+    if (app.get('map').has(userId) == true){
+      command = 'mirror'
+    } else {
+      command = 'init'
+    }
     wss.handleUpgrade(request, socket, head, function (ws) {
-      wss.emit('connection', ws, request);
+      wss.emit('connection', ws, command, request);
     });
-  });
 });
 
-wss.on('connection', function (ws, request) {
+wss.on('connection', function (ws, command, request) {
 
-  const userId = request.session.userId;
-  console.log('connecting userId: ' + userId)
+  const userId =  getCookie(request,'userId')
 
-  app.get('map').set(userId, ws);
+  let mirror_id;
 
-  ws.on('message', function (str) {
-    let obj = JSON.parse(str);
-    if (obj.destination == 'chat'){
-      // Broadcast to all clients
-      app.get('map').forEach(function each(client, id) {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(str);
-        }
-      });
-      chat_db.insertOne(
-          { "msg" : obj.msg,
-            "sender" : userId,
-            "timestamp" : Date.now(),
+  if (command === 'mirror'){
+    mirror_id = app.get('map').get(userId).length
+    app.get('map').get(userId).push(ws);
+  }
+  else if (command === 'init') { 
+    mirror_id = 0;
+    let list = [ws]
+    app.get('map').set(userId, list);
+  } else {
+    console.log('error: incorrect connection command')
+  }
+    ws.on('message', function (str) {
+      let obj = JSON.parse(str);
+      if (obj.destination == 'chat'){
+        // Broadcast to all clients
+        app.get('map').forEach(function each(clients, id) {
+          clients.forEach(function allClients(client){
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(str);
+            }
+          })
+        });
+        chat_db.insertOne(
+            { "msg" : obj.msg,
+              "sender" : userId,
+              "timestamp" : Date.now(),
+            }
+        )
+      } if (obj.destination == 'bci'){
+        // Broadcast to all clients (even your mirrors) EXCEPT YOURSELF
+        app.get('map').forEach(function each(clients, id) {
+          obj["user"] = 'other'
+          str = JSON.stringify(obj)
+          if (id != userId) {
+            clients.forEach(function allClients(client){
+              if (client.readyState === WebSocket.OPEN) {
+                client.send(str);
+              }
+            })
+          } else{
+            obj["user"] = 'mirror'
+            str = JSON.stringify(obj)
+            clients.forEach(function allClients(client, inner_id){
+              if (client.readyState === WebSocket.OPEN && inner_id != mirror_id) {
+                client.send(str);
+              }
+            })
           }
-      )
-    } if (obj.destination == 'bci'){
-      // Broadcast to all clients EXCEPT YOURSELF
-      app.get('map').forEach(function each(client, id) {
-        if (id != userId) {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(str);
-          }
-        }
-      })};
-  });
+        })};
+    });
 
-  ws.on('close', function () {
-    console.log('closing user: ' + userId)
-    map.delete(userId);
-  });
+    ws.on('close', function () {
+      if (app.get('map').get(userId).length == 1){
+      app.get('map').delete(userId);
+      } else {
+        app.get('map').get(userId).splice(mirror_id,1)
+      }
+    });
 });
 
 // error handlers

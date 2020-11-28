@@ -137,9 +137,14 @@ elements.forEach(function(element) {
         }
     }});
 
-function passSignal(msg) {
-    other_signal = msg.ts_filtered
-}
+    // Passing BCI data to WebGL visualization
+    function passSignal(obj) {
+        if (obj.user === 'other'){
+        other_signal = obj.data.ts_filtered
+        } else if (obj.user === 'mirror'){
+            signal = obj.data.ts_filtered
+        }
+    }
 
     // Plot Bands
     // let power;

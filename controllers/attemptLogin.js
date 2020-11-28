@@ -1,17 +1,24 @@
 const uuid = require('uuid');
 
+
+function getCookie(req,name) {
+  const value = `; ${req.headers.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
 module.exports.attemptLogin = async (req, res) => {
     //
     // "Log in" user and set userId to session.
-    //
-    const id = uuid.v4();
+    let cookie =  getCookie(req,'userId')
+    if (cookie === undefined) {
+      const id = uuid.v4();
+      console.log('adding userId: ' + id)
+      res.cookie('userId',id, { maxAge: 900000, httpOnly: true });
+      cookie = id;
+    } else {
+      console.log(`Updating session for user ${cookie}`);
+    }
 
-    console.log(req)
-
-    console.log(`Updating session for user ${id}`);
-
-    // req.session.userId = id;
-    console.log('adding userId: ' + id)
-    req.session.userId = id;
-    res.send({ result: 'OK', message: 'Session updated with UserId: ' + id });
+    res.send({ result: 'OK', userId: cookie });
   };
