@@ -17,7 +17,7 @@ conda env create -f environment.yml
 
 3. Activate the environment: 
 ```
-conda activate brainsatplay
+conda activate brains-at-play
 ```
 
 5. Begin streaming from the Brains at Play Streamer
