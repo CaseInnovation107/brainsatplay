@@ -1,5 +1,5 @@
 """ 
-This module defines :class:'Trace'
+This module defines :class:'BrainsAtPlayStreamer'
 """
 
 import sys, signal
@@ -15,14 +15,13 @@ from urllib.parse import urlparse
 import json
 import requests
 from brainflow.board_shim import BoardShim, BrainFlowInputParams, LogLevels, BoardIds
-# import socketio
 from brainflow.data_filter import DataFilter, FilterTypes
 
 
-class nBrainStreamer(object):
+class BrainsAtPlayStreamer(object):
     def __init__(self):
         """
-        This is the constructor for the nBrainStreamer data object
+        This is the constructor for the BrainsAtPlayStreamer data object
         """
 
         self.id = None
@@ -37,7 +36,7 @@ class nBrainStreamer(object):
         self.data = []
 
     def __repr__(self):
-        return "nBrainStreamer('{},'{}',{})".format(self.id, self.date)
+        return "BrainsAtPlayStreamer('{},'{}',{})".format(self.id, self.date)
 
     def __str__(self):
         return '{} _ {}'.format(self.id, self.date)
@@ -46,7 +45,6 @@ class nBrainStreamer(object):
 
         # Authenticate
         res = self.session.post(url + '/login')
-
 
         # Convert Cookies into Proper Format
         cookies = ""
@@ -59,7 +57,7 @@ class nBrainStreamer(object):
                 print('userId: ' + self.id)
 
         # Add connectionType Cookie
-        cookies += str('connectionType=nBrainsStreamer; ')
+        cookies += str('connectionType=BrainsAtPlayStreamer; ')
 
         
         o = urlparse(url)
@@ -116,65 +114,15 @@ class nBrainStreamer(object):
     async def connect(self, streamType, port=None):
             print('Connecting to board')
             self.board = initialize_board(streamType,port)
-
-    def save(self,label=None,datadir='streams'):
-        datadir = "streams"
-        if not os.path.exists(datadir):
-            os.mkdir(datadir)
-
-        print(f"Saving " + self.id + "'s stream...")
-        filename = os.path.join(datadir, f"{self.id}{label}")
-        with open(filename, "wb") as fp:
-            pickle.dump(self, fp)
-        print(self.id + " saved!")
-
-    def plot(self):
-        plt.figure()
-        print('Only for channel #' + str(self.channels[0]))
-        data = self.board.get_current_board_data(num_samples=450000)
-        t = data[self.board.time_channel] - self.start_time
-        data = data[self.board.eeg_channels][self.channels[0]]
-        DataFilter.perform_highpass(data, self.board.rate, 3.0, 4, FilterTypes.BUTTERWORTH.value, 0)
-
-        plt.plot(t, data)
-        plt.title('OpenBCI Stream History')
-        plt.ylabel('Voltage')
-        plt.xlabel('Time (s)')
-
-        plt.show()
-        
-        return data
-
     
     def signal_handler(self, signal, frame):
-
-        print('\nStopping data stream.')
-        flag = True
 
         # Stop stream
         self.board.stop_stream()
 
-        # data = self.plot()
-
-        # while flag:
-        # # Give the option to save data locally
-        #     save_choice = input("\nWould you like to save your data locally? (y/n) ")
-        #     if save_choice == 'y':
-        #         # nans, x= nan_helper(data)
-        #         # data[nans]= np.interp(x(nans), x(~nans), data[~nans])
-        #         self.data = data[self.board.eeg_channels]
-        #         self.details['time_channel'] = (data[self.board.time_channel] - data[self.board.time_channel][0])
-        #         self.details['voltage_units'] = 'uV'
-        #         self.save(self.date,'traces')
-        #         flag = False
-        #     if save_choice == 'n': 
-        #         flag = False
-        #     else: 
-        #         print("Invalid input.")
-
         self.board.release_session()
 
-        sys.exit('Exiting brainstorm-client...')
+        sys.exit('Brains-at-play data stream has been stopped.')
 
 def initialize_board(name='SYNTHETIC',port = None):
     if name == 'SYNTHETIC':
@@ -190,7 +138,7 @@ def initialize_board(name='SYNTHETIC',port = None):
         board.eeg_channels = BoardShim.get_eeg_channels(board_id)
         board.accel_channels = BoardShim.get_accel_channels(board_id)
 
-    elif name == 'OPENBCI':
+    elif name == 'CYTON_DAISY':
 
         board_id = BoardIds.CYTON_DAISY_BOARD.value
         params = BrainFlowInputParams()

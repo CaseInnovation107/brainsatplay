@@ -1,6 +1,6 @@
 import sys
 import os
-from nBrainStreamer import nBrainStreamer 
+from BrainsAtPlayStreamer import BrainsAtPlayStreamer 
 import numpy as np
 import pickle
 import asyncio
@@ -8,21 +8,17 @@ import asyncio
 async def beginStream(TYPE, PORT, URL):
 
     # Initialize the Trace
-    nStream = nBrainStreamer()
+    brain = BrainsAtPlayStreamer()
 
     # Connect Websocket + EEG headset through Brainflow
-    if TYPE == 'SYNTHETIC':
-        await nStream.connect(streamType=TYPE)
-        await nStream.stream(url=URL)
-    elif TYPE == 'OPENBCI':
-        await nStream.connect(streamType=TYPE,port=PORT)
-        await nStream.stream(url=URL)
+    await brain.connect(streamType=TYPE,port=PORT)
+    await brain.stream(url=URL)
 
 async def main():
 
-    TYPE =  'SYNTHETIC' #'OPENBCI' # 
+    TYPE =  'SYNTHETIC' #'CYTON_DAISY' # 
                             # Streams
-                                # OPENBCI
+                                # CYTON_DAISY
                                 # SYNTHETIC
 
                             # Ports
@@ -33,8 +29,8 @@ async def main():
 
     URL = 'https://brainsatplay.azurewebsites.net' # 'http://localhost' # 
 
-    stream = asyncio.create_task(beginStream(TYPE, PORT, URL))
-    await stream
+    brain = asyncio.create_task(beginStream(TYPE, PORT, URL))
+    await brain
 
 if __name__ == "__main__":
     asyncio.run(main())
