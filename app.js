@@ -8,25 +8,15 @@ const favicon = require('serve-favicon');
 const logger = require('morgan');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
-
 const hbs = require('express-handlebars');
 const WebSocket = require('ws');
 
-let protocol = 'http' // 'https'
-let webSocketType = 'serverless'
 
-// const https = require('https')
-const http = require(protocol) 
-
-
-// Listen to Port
+// Settings
+let example = 'brainstorm'
+let protocol = 'http';
 const url = 'localhost'
-
-if (protocol == 'http'){
 var port = normalizePort(process.env.PORT || '80');
-} else {
-  var port = normalizePort(process.env.PORT || '443');
-}
 
 //
 // App
@@ -35,6 +25,8 @@ var port = normalizePort(process.env.PORT || '80');
 const app = express();
 const map = new Map();
 app.set('map', map);
+app.set('example', example);
+
 
 //CORS
 app.use(require("cors")()) // allow Cross-domain requests
@@ -74,21 +66,13 @@ let sessionParser = session({
     maxAge: 1000 * 60 * 60 * 24 * 7}
 })
 
-// view engine setup
-app.engine('hbs', hbs({extname: 'hbs', defaultLayout: 'layout', layoutsDir: __dirname + '/views/layouts/'}));
-app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+// Set Usage of Libraries
 app.use(logger('dev'));
 app.use(cookieParser())
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// if (!(process.env.NODE_ENV === 'development')) {
-//   app.set('trust proxy', 1);
-// }
-
 //Listen to Port for HTTP Requests
-
-
 app.use(function(req, res, next) {
   const validOrigins = [
     `http://localhost`,
@@ -120,7 +104,6 @@ const initRoutes = require("./routes/web");
 initRoutes(app);
 
 // development error handler
-// will print stacktrace
 console.log(app.get('env'))
 if (app.get('env') === 'development') {
   app.use(function(err, req, res, next) {
@@ -130,14 +113,14 @@ if (app.get('env') === 'development') {
 }
 
 // production error handler
-// no stacktraces leaked to user
 app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   console.log('error')
 });
 
 // Static Middleware
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'examples',example)));
+app.use(favicon(path.join(__dirname, 'examples', example, 'favicon.ico')));
 
 // Setting the port
 app.set('port', port);
@@ -145,22 +128,16 @@ app.set('port', port);
 //
 // Server
 //
-let server; 
-if (protocol == 'http'){    
-  server = http.createServer(app);  
-} else {
-  const key = fs.readFileSync(path.join(__dirname,'public','assets','keys','key-rsa.pem'));
-  const cert = fs.readFileSync(path.join(__dirname,'public','assets','keys','cert.pem'));
-  server = https.createServer({ key, cert }, app); 
-}   
+const http = require('http') 
+let server = http.createServer(app);  
 
 // Websocket
 let wss;
-if (webSocketType == 'serverless'){
+// if (webSocketType == 'serverless'){
 wss = new WebSocket.Server({ clientTracking: false, noServer: true });
-} else{
-wss = new WebSocket.Server( {server:server});
-}
+// } else{
+// wss = new WebSocket.Server( {server:server});
+// }
 
 function getCookie(req,name) {
   const value = `; ${req.headers.cookie}`;
