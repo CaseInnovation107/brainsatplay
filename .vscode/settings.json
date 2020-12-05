@@ -1,8 +1,0 @@
-{
-    "appService.zipIgnorePattern": [
-        "node_modules{,/**}",
-        ".vscode{,/**}"
-    ],
-    "appService.defaultWebAppToDeploy": "/subscriptions/600aa544-36f8-4b15-8739-dc5849049b26/resourceGroups/appsvc_linux_centralus/providers/Microsoft.Web/sites/brainsatplay",
-    "appService.deploySubpath": "."
-}
