@@ -1,2 +1,2 @@
 # brains-at-play
-Server side code for Brains@Play
+Scalable full-stack code for cloud-based apps integrating EEG data streams
