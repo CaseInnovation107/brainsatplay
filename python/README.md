@@ -1,8 +1,5 @@
-# [brainstorm-client](https://github.com/Mousai-Neurotechnologies/brainstorm-client)
-Stream data from OpenBCI headsets into the web
-
-[![Github badge](https://img.shields.io/badge/github-source_code-blue.svg?logo=github&logoColor=white)](https://github.com/Mousai-Neurotechnologies/brainstorm-client)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+# Brains at Play Streamer
+Stream data from Brainflow-compatible headsets into the web
 
 *Special thanks to [OpenBCI](https://openbci.com/) and [Brainflow](https://brainflow.readthedocs.io/en/stable/index.html).*
 
@@ -11,31 +8,29 @@ Stream data from OpenBCI headsets into the web
 * [Acknowledgements](#Acknowledgments)
 
 ## Installation
-1. Clone or download the [brainstorm-client](https://github.com/Mousai-Neurotechnologies/brainstorm-client) repository
+1. Install [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
 
-2. Install [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
-
-3. Create a conda environment from the environment.yml file.: 
+2. Create a conda environment from the environment.yml file.: 
 ```
 conda env create -f environment.yml
 ```
 
-4. Activate the Brainstorm Client environment: 
+3. Activate the environment: 
 ```
-conda activate brainstorm-client
+conda activate brainsatplay
 ```
 
-5. Begin streaming from the Brainstorm Client
+5. Begin streaming from the Brains at Play Streamer
 ```
 python stream.py
 ```
 
 ## Support
 
-If you are having issues, please email the team at contact@mousaineuro.com
+If you are having issues, please email Garrett Flynn at gflynn@usc.edu
 
 ## Acknowledgments
-Development of this code was supported by OpenBCI and the 2020-2021 USC Visions and Voices event series.
+Development of this code was supported by OpenBCI for the 2020-2021 USC Visions and Voices event series.
 
 
 

@@ -1,4 +1,4 @@
-name: nBrains-client
+name: brains-at-play
 channels:
   - defaults
 dependencies:
