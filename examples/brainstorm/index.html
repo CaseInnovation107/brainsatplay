@@ -6,6 +6,8 @@
     <meta name=viewport content="width=device-width,initial-scale=1">
     <link rel=icon href=favicons/favicon.ico>
     <link rel="stylesheet" type="text/css" href="css/brainstorm.css"/>
+    <script type="text/javascript" src="classes/Brain.js"></script>
+    <script type="text/javascript" src="classes/nBrains.js"></script>
     <script type="text/javascript" src="js/webgl.js" defer></script>
     <script type="text/javascript" src="js/utils.js" defer></script>
     <script type="text/javascript" src="js/gl-matrix-min.js" defer></script>
@@ -149,7 +151,7 @@
     // render_array = [gl.POINTS, gl.POINTS, gl.POINTS, gl.POINTS, gl.POINTS, gl.POINTS]
     let shape_array = [['sphereShells','brains'], ['brain'], ['voltage'],['brains']]
     let anim_array = [[5.0,3.0],[false],[false],[false]] // In seconds; false has no animation
-    let render_array = [[gl.POINTS, gl.POINTS],[gl.POINTS], [gl.LINES],[gl.POINTS],[gl.POINTS]];
+    let render_array = [[gl.POINTS, gl.POINTS],[gl.POINTS], [gl.LINES],[gl.POINTS]];
     let message_array = [['scanning your brain...', 'welcome to the brainstorm'], [''], [''], ['']];
     let ease_array = [[.1, .1],[.1], [.1], [.1]];
 
@@ -172,11 +174,11 @@
 
     // WebGL Variables
     let DESIRED_POINTS = 1e5/2; // 80000
-    let REDUCE_POINT_DISPLAY_FACTOR = 600;
+    let SIGNAL_SUSTAIN = 150;
     let signal_sustain;
     let pointCount;
     let INITIAL_Z_OFFSET = 1.7;
-    let VOLTAGE_Z_OFFSET = .5;
+    let VOLTAGE_Z_OFFSET = 1.7;
     let AUTO_ROTATION_X = 0.0; //0.2;
     let INNER_Z = 2*VOLTAGE_Z_OFFSET;
 
@@ -213,15 +215,6 @@
     let distortFlag = false;
     let distortIter = 1;
 
-    // Signal Setup
-    let signal = new Array(channels);
-    let other_signal = new Array(channels);
-    for (let chan = 0; chan < channels; chan++){
-        signal[chan] = new Array(REDUCE_POINT_DISPLAY_FACTOR).fill(0);
-        other_signal[chan] = new Array(REDUCE_POINT_DISPLAY_FACTOR).fill(0);
-    }
-    let passed_signal = []
-
     // WebSocket Setup
     let messages = []
     let option = 'local';
@@ -232,10 +225,8 @@
         url = new URL('https://brainsatplay.azurewebsites.net/');
     }
 
-    let brains = undefined;
-    let numUsers = 1;
+    let brains;
     let userId = undefined;
-
     let ws;
 
     $(function () {
@@ -262,12 +253,19 @@
         $(this).html('loading...').animate({'opacity': 1}, 400);
     });
 
+
+    // Check SIGNAL_SUSTAIN is odd
+    if (SIGNAL_SUSTAIN%2 == 0){
+            SIGNAL_SUSTAIN += 1;
+    }
+
     function initialize() {
 
-        createPointCloud('brain').then((cloud) => {
+        createPointCloud('brain').then((cloud) => { 
                 brainVertices = reducePointCount(cloud, DESIRED_POINTS);
                 pointCount = brainVertices.length / 3;
                 establishWebsocketConnection();
+                brains = newBrains(userId);
                 particleBrain()
         }
         )

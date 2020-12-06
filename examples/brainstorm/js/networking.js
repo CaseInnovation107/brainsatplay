@@ -19,6 +19,7 @@ function handleResponse(res) {
 function showMessage(res) {
     if (res.userId != undefined){
         document.getElementById('userId').innerHTML = 'Client ID: ' + res.userId
+        userId = res.userId;
     } else {
         console.log(`\n${res}`);
     }
@@ -54,16 +55,43 @@ function establishWebsocketConnection() {
             $('#messages').append($('<li>').text(obj.msg));
         }
         else if (obj.destination == 'bci'){
-            passSignal(obj)
-        } else if (obj.destination == 'nBrains'){
+            if (brains != undefined){
+                brains.users.get(obj.id).streamIntoBuffer(obj.data)
+            }
+        } else if (obj.destination == 'BrainsAtPlay'){
+
+            let reallocationInd;
             update = obj.n;
-            numUsers += update
+            if (update == 1){
+                brains.addBrain(obj.id)
+                reallocationInd = brains.users.size - 1
+            } else if (update == -1){
+                
+                // get index of removed id
+                let iter = 0;
+                brains.users.forEach((key) =>{
+                    if (key == obj.id){
+                        reallocationInd = iter
+                    }
+                    iter++
+                })
+                // delete id from map
+                brains.users.delete(obj.id)
+            } else if (update > 1){
+                for (newUser = 0; newUser < obj.n; newUser++){
+                    if (brains.users.get(obj.ids[newUser]) == undefined && obj.ids[newUser] != undefined){
+                        brains.addBrain(obj.ids[newUser])
+                    }
+                }
+            }
             if (state != 0){
                 announceUsers(update)
                 stateManager(animState)
+                // brains.reallocateUserBuffers(reallocationInd);
             }
-            displacement = resetDisplacement();
+            brains.initializeUserBuffers()
             }
+
         else {
             console.log(obj)
         }

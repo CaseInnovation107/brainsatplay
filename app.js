@@ -186,11 +186,11 @@ wss.on('connection', function (ws, command, request) {
     app.get(type).set(userId, list);
   }
 
-  let str = JSON.stringify({
-    n: +1,
-    user: userId,
-    destination: 'nBrains'
-});
+    let str = JSON.stringify({
+      n: app.get('interfaces').size,
+      ids: Object.keys(Object.fromEntries(app.get('interfaces'))),
+      destination: 'BrainsAtPlay'
+  });
 
   // Broadcast new number of brains to all interfacea
   app.get('interfaces').forEach(function each(clients, id) {
@@ -219,31 +219,16 @@ wss.on('connection', function (ws, command, request) {
             }
         )
       } if (obj.destination == 'bci'){
-        // Broadcast brain signals to all interfaces EXCEPT YOURSELF
+        // Broadcast brain signals to all interfaces including yourself
         app.get('interfaces').forEach(function each(clients, id) {
-          obj["user"] = 'other'
+          obj.id = userId
           let str = JSON.stringify(obj)
-          if (id != userId) {
             clients.forEach(function allClients(client){
               if (client.readyState === WebSocket.OPEN) {
                 client.send(str);
               }
             })
-          } else{
-            obj["user"] = 'mirror'
-            let str = JSON.stringify(obj)
-            clients.forEach(function allClients(client, inner_id){
-              if (client.readyState === WebSocket.OPEN && inner_id != mirror_id) {
-                client.send(str);
-              }
-            })
-          }
         })
-
-        let str = JSON.stringify({
-          msg: app.get('interfaces').size,
-          destination: 'nBrains'
-      });
       };
     });
 
@@ -256,8 +241,8 @@ wss.on('connection', function (ws, command, request) {
 
       let str = JSON.stringify({
         n: -1,
-        user: userId,
-        destination: 'nBrains'
+        id: userId,
+        destination: 'BrainsAtPlay'
     });
     
       // Broadcast new number of brains to all interfacea
@@ -268,7 +253,6 @@ wss.on('connection', function (ws, command, request) {
           }
         })
       });
-      
     });
 });
 

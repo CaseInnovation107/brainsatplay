@@ -146,15 +146,6 @@ elements.forEach(function(element) {
         }
     }});
 
-    // Passing BCI data to WebGL visualization
-    function passSignal(obj) {
-        if (obj.user === 'other'){
-        other_signal = obj.data.ts_filtered
-        } else if (obj.user === 'mirror'){
-            signal = obj.data.ts_filtered
-        }
-    }
-
     // Plot Bands
     // let power;
     // let label;
@@ -184,17 +175,17 @@ elements.forEach(function(element) {
 function resetDisplacement(){
     let displacement = [];
     let user;
-    let perUser = Math.floor(pointCount/(numUsers*channels))
-    for(user=0; user < numUsers; user++){
+    let perUser = Math.floor(pointCount/(brains.users.size*channels))
+    for(user=0; user < brains.users.size; user++){
         displacement.push(new Array())
         for(let chan=0; chan < channels; chan++){
             displacement[user].push(new Array(perUser).fill(0.0));
         }
     }
 
-    let remainder = pointCount - channels*numUsers*perUser
+    let remainder = pointCount - channels*brains.users.size*perUser
         for (let chan = 0; chan < channels; chan++) {
-            for (user = 0; user < numUsers; user++)
+            for (user = 0; user < brains.users.size; user++)
                 if (remainder > 0) {
                     remainder--;
                     displacement[user][chan].push(0.0)
@@ -226,7 +217,7 @@ function sendSignal(channels) {
     let base_freq = document.getElementById("freqRange").value
     generate_interval = Math.round(samplerate*(1/base_freq))
 
-    signal = new Array(channels);
+    let signal = new Array(channels);
     for (let channel =0; channel < channels; channel++) {
         signal[channel] = bci.generateSignal([(INNER_Z/2)/(2*channels)], [base_freq], samplerate, 1/base_freq);
     }
@@ -235,8 +226,9 @@ function sendSignal(channels) {
     let time = makeArr(startTime,startTime+(1/base_freq),generate_interval)
 
     let data = {
-        ts_filtered: signal,
-        // time: time
+        type: 'ts_filtered',
+        signal: signal,
+        time: time
     }
     if (!ws) {
         showMessage('No WebSocket connection');
@@ -249,28 +241,6 @@ function sendSignal(channels) {
     }
 }
 
-function updateDisplacement(displacement,signal,user){
-    let val;
-
-        for (let chan in displacement[user]) {
-
-            val = 0;
-
-            if (signal[chan] != undefined) {
-                if (signal[chan].length > 0) {
-                    val = signal[chan].shift()
-                }
-            }
-
-            for (let count = 0; count < Math.floor(signal_sustain); count++) {
-                displacement[user][chan].shift();
-                displacement[user][chan].push(val);
-            }
-        }
-
-    return displacement
-}
-
 function switchToVoltage(pointCount){
     // Reset View Matrix
     let viewMatrix = mat4.create();
@@ -280,7 +250,7 @@ function switchToVoltage(pointCount){
     mat4.invert(viewMatrix, viewMatrix);
 
     // Create signal dashboard
-    let vertexHome = getVoltages([],pointCount,numUsers);
+    let vertexHome = getVoltages([],pointCount,brains.users.size);
     let ease = true;
     let rotation = false;
     let zoom = false;
@@ -318,7 +288,8 @@ function stateManager(animState){
     // reset displacement if leaving voltage visualization
 
     if (shape_array[prevState][animState] == 'voltage') {
-        displacement = resetDisplacement();
+        brains.initializeUserBuffers();
+        displacement = brains.userBuffers;
         disp_flat = [...displacement.flat(2)]
         gl.bindBuffer(gl.ARRAY_BUFFER, dispBuffer)
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(disp_flat), gl.DYNAMIC_DRAW);
@@ -338,17 +309,9 @@ function stateManager(animState){
 
         [vertexHome, viewMatrix, ease, rotation, zoom] = switchToVoltage(pointCount)
 
-        signal = new Array(channels);
-        other_signal = new Array(channels);
-
-        for (let chan = 0; chan < channels; chan++) {
-            signal[chan] = new Array(REDUCE_POINT_DISPLAY_FACTOR).fill(0);
-            other_signal[chan] = new Array(REDUCE_POINT_DISPLAY_FACTOR).fill(0);
-        }
-
-        displacement = resetDisplacement();
+        brains.initializeUserBuffers();
+        displacement = brains.userBuffers;
         disp_flat = [...displacement.flat(2)]
-        signal_sustain = (Math.round(pointCount/channels))/(numUsers*REDUCE_POINT_DISPLAY_FACTOR);
         cameraHome = VOLTAGE_Z_OFFSET;
     }
     else {

@@ -36,18 +36,18 @@ function createPointCloud(pointFunction, pointCount) {
     if (pointFunction == 'brain') {
         pointCloud = getBrain()
     } else if (pointFunction == 'brains'){
-            let oneBrain = reducePointCount(brainVertices, Math.floor((brainVertices.length/3)/numUsers))
-            let dim_size = Math.ceil(Math.sqrt(numUsers));
+            let oneBrain = reducePointCount(brainVertices, Math.floor((brainVertices.length/3)/brains.users.size))
+            let dim_size = Math.ceil(Math.sqrt(brains.users.size));
     
             if (dim_size == 1){delta = 0; z_window = 0} else{
-                z_window = INNER_Z;
-                delta = (2*INNER_Z)/(dim_size-1)
+                z_window = 1;
+                delta = (2*1)/(dim_size-1)
             }
             let row = 0;
             let col = -1;
     
             let tempBrain;
-            for (let i = 0; i < numUsers; i++) {
+            for (let i = 0; i < brains.users.size; i++) {
                 tempBrain = [...oneBrain];
                 if (i % dim_size == 0) {
                     row = 0;
@@ -63,7 +63,7 @@ function createPointCloud(pointFunction, pointCount) {
             }
     
     
-            if (numUsers == 1) {
+            if (brains.users.size == 1) {
                 pointCloud = tempBrain;
             } else {
                 pointCloud = pointCloud.concat(tempBrain);
@@ -72,21 +72,21 @@ function createPointCloud(pointFunction, pointCount) {
             }
         }
         else if (pointFunction == 'voltage') {
-            pointCloud = getVoltages(pointCloud,pointCount,numUsers)
+            pointCloud = getVoltages(pointCloud,pointCount,brains.users.size)
         } else if (pointFunction == shapes.sphereShells) {
-            let dim_size = Math.ceil(Math.sqrt(numUsers));
+            let dim_size = Math.ceil(Math.sqrt(brains.users.size));
             if (dim_size == 1){delta = 0; z_window = 0} else{
                 z_window = INNER_Z;
                 delta = (2*INNER_Z)/(dim_size-1)
             }
             let row = 0;
             let col = -1;
-            for (let i = 0; i < numUsers; i++) {
+            for (let i = 0; i < brains.users.size; i++) {
                 if (i % dim_size == 0) {
                     row = 0;
                     col++;
                 }
-                for (let j = 0; j < Math.floor(pointCount / numUsers); j++) {
+                for (let j = 0; j < Math.floor(pointCount / brains.users.size); j++) {
                     const r = () => (Math.random() - 0.5);
                     let point = pointFunction(r(), r(), r());
     

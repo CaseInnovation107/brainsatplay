@@ -3,9 +3,7 @@
 // Unported License. The original work can be found at
 // https://brainder.org/brain-for-blender.
 
-async function particleBrain() {
-
-    let temp;
+function particleBrain() {
 
     // ------------------------------------- P5 Ported Controls ------------------------------------ //
     // Initialize Channel Controls
@@ -15,20 +13,16 @@ async function particleBrain() {
 
         channels = parseFloat(event.target.value);
 
-        [vertexHome, , ease, rotation, zoom] = switchToVoltage(pointCount)
+        SIGNAL_SUSTAIN = Math.round(99/channels)
 
-        signal = new Array(channels);
-        other_signal = new Array(channels);
-
-        for (let chan = 0; chan < channels; chan++) {
-            signal[chan] = new Array(REDUCE_POINT_DISPLAY_FACTOR).fill(0);
-            other_signal[chan] = new Array(REDUCE_POINT_DISPLAY_FACTOR).fill(0);
+        if (SIGNAL_SUSTAIN%2 == 0){
+            SIGNAL_SUSTAIN += 1;
         }
 
-        displacement = resetDisplacement();
-        disp_flat = [...displacement.flat(2)]
-        signal_sustain = (Math.round(pointCount/channels))/(numUsers*REDUCE_POINT_DISPLAY_FACTOR);
+        [vertexHome, , ease, rotation, zoom] = switchToVoltage(pointCount)
 
+        brains.initializeUserBuffers();
+        displacement = brains.userBuffers;
     });
 
 
@@ -52,10 +46,9 @@ async function particleBrain() {
     vertexCurr = vertexHome;
     vertexVel = new Array(pointCount*3).fill(0);
 
-    displacement = resetDisplacement();
+    // displacement = resetDisplacement();
+    displacement = brains.userBuffers;
     disp_flat = [...displacement.flat(2)]
-    signal_sustain = (Math.round(pointCount/channels))/REDUCE_POINT_DISPLAY_FACTOR;
-
 
 // createbuffer
 // load vertexData into buffer
@@ -406,8 +399,10 @@ void main() {
 
 
         // Append voltage stream to array
-        displacement = updateDisplacement(displacement,signal, 0) // Update your signal
-        displacement = updateDisplacement(displacement,other_signal,1)// Update the signal of others
+        // displacement = updateDisplacement(displacement,signal, 0) // Update your signal
+        // displacement = updateDisplacement(displacement,other_signal,1)// Update the signal of others
+        brains.updateUserBuffers()
+        displacement = brains.userBuffers;
         disp_flat = [...displacement.flat(2)]
 
         // Push voltage stream to displacement buffer
@@ -432,10 +427,18 @@ void main() {
         }
 
         // Get synchrony
-        if (shape_array[state][animState] == 'brain' && t > 100 && numUsers > 1) {
+        if (shape_array[state][animState] == 'brain' && t > 100) {
             // Synchrony of you and other users
-            let new_sync = getPearsonCorrelation(displacement[0].flat(), displacement[1].flat());
 
+            if (brains.users.size > 1){
+            // Generate edge array
+            keys = brains.users.keys()
+            let edgeArray = [];
+            let currentEdge = []
+            currentEdge.push(keys.next().value)
+            currentEdge.push(keys.next().value)
+            edgeArray.push(currentEdge)
+            new_sync = brains.synchrony('pcc',edgeArray)
             // Slowly ease to the newest synchrony value
             synchrony.shift()
             if (!isNaN(new_sync)) {
@@ -444,10 +447,10 @@ void main() {
                 synchrony.push(0)
             }
         } else {
-            synchrony = new Array(SYNCHRONY_BUFFER_SIZE).fill(0);
-        };
-
-        console.log(synchrony)
+            synchrony.shift()
+            synchrony.push(0)
+        }
+    }
 
         // Modify View Matrix
         mat4.invert(viewMatrix, viewMatrix);
@@ -532,10 +535,12 @@ void main() {
         }
 
         // Draw
+
         gl.drawArrays(render_array[state][animState], 0, vertexCurr.length / 3);
 
         // Update Simple Synchrony Display
         let sync_average = synchrony.reduce(sum, 0) / synchrony.length
+
         if (sync_average > 0) {
             document.getElementById('sync-dot').style.backgroundColor = 'rgb(118, 190, 255)';
         } else {
@@ -551,7 +556,5 @@ void main() {
             t++;
         }
     };
-
-    console.log(numUsers)
     animate()
 }
