@@ -89,14 +89,14 @@ class BrainsAtPlayStreamer(object):
 
                 for entry in data:
                     DataFilter.perform_highpass(entry, self.board.rate, 3.0, 4, FilterTypes.BUTTERWORTH.value, 0)
-                    pass_data.append((entry).tolist())
+                    pass_data.append((entry/100).tolist())
 
-                if len(t) > 0:
-                    t = t - self.start_time
+                # if len(t) > 0:
+                #     t = t - self.start_time
 
                 message = {
                     'destination': 'bci', 
-                'data': {'ts_filtered':pass_data}
+                'data': {'signal':pass_data,'time':t.tolist()}
                 }
                 message = json.dumps(message, separators=(',', ':'))
                 
@@ -110,6 +110,7 @@ class BrainsAtPlayStreamer(object):
                         print('Unable to reconnect, trying again.')
 
                 await websocket.send(message)
+                time.sleep(1)
 
     async def connect(self, streamType, port=None):
             print('Connecting to board')
