@@ -186,18 +186,28 @@ wss.on('connection', function (ws, command, request) {
     app.get(type).set(userId, list);
   }
 
-    let str = JSON.stringify({
+    let initStr = JSON.stringify({
       n: app.get('interfaces').size,
       ids: Object.keys(Object.fromEntries(app.get('interfaces'))),
-      destination: 'BrainsAtPlay'
+      destination: 'init'
+  });
+
+  ws.send(initStr)
+
+  let str = JSON.stringify({
+    n: +1,
+    id: userId,
+    destination: 'BrainsAtPlay'
   });
 
   // Broadcast new number of brains to all interfacea
   app.get('interfaces').forEach(function each(clients, id) {
     clients.forEach(function allClients(client){
+      if (client.id != userId){
       if (client.readyState === WebSocket.OPEN) {
         client.send(str);
       }
+    }
     })
   });
 

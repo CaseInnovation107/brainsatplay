@@ -58,13 +58,24 @@ function establishWebsocketConnection() {
             if (brains != undefined){
                 brains.users.get(obj.id).streamIntoBuffer(obj.data)
             }
-        } else if (obj.destination == 'BrainsAtPlay'){
+        } else if (obj.destination == 'init'){
 
-            let reallocationInd;
+            for (newUser = 0; newUser < obj.n; newUser++){
+                if (brains.users.get(obj.ids[newUser]) == undefined && obj.ids[newUser] != undefined){
+                    brains.addBrain(obj.ids[newUser])
+                }
+            }
+            brains.initializeUserBuffers()
+        }
+        else if (obj.destination == 'BrainsAtPlay'){
+
+            // let reallocationInd;
             update = obj.n;
             if (update == 1){
-                brains.addBrain(obj.id)
-                reallocationInd = brains.users.size - 1
+                if (obj.id != userId){
+                    brains.addBrain(obj.id)
+                    reallocationInd = brains.users.size - 1
+                }
             } else if (update == -1){
                 
                 // get index of removed id
@@ -77,12 +88,6 @@ function establishWebsocketConnection() {
                 })
                 // delete id from map
                 brains.users.delete(obj.id)
-            } else if (update > 1){
-                for (newUser = 0; newUser < obj.n; newUser++){
-                    if (brains.users.get(obj.ids[newUser]) == undefined && obj.ids[newUser] != undefined){
-                        brains.addBrain(obj.ids[newUser])
-                    }
-                }
             }
             if (state != 0){
                 announceUsers(update)
