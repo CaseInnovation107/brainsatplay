@@ -7,7 +7,6 @@ async function particleBrain() {
 
     let temp;
 
-
     // ------------------------------------- P5 Ported Controls ------------------------------------ //
     // Initialize Channel Controls
     const selectElement = document.getElementById('channels');
@@ -16,7 +15,7 @@ async function particleBrain() {
 
         channels = parseFloat(event.target.value);
 
-        [vertexHome, , ease, rotation, zoom] = switchToVoltage(resolution)
+        [vertexHome, , ease, rotation, zoom] = switchToVoltage(pointCount)
 
         signal = new Array(channels);
         other_signal = new Array(channels);
@@ -28,7 +27,7 @@ async function particleBrain() {
 
         displacement = resetDisplacement();
         disp_flat = [...displacement.flat(2)]
-        signal_sustain = (Math.round(resolution/channels))/(numUsers*REDUCE_POINT_DISPLAY_FACTOR);
+        signal_sustain = (Math.round(pointCount/channels))/(numUsers*REDUCE_POINT_DISPLAY_FACTOR);
 
     });
 
@@ -41,30 +40,21 @@ async function particleBrain() {
 
     let key_events = [37, 38, 39, 40];
 
-
-    if (typeof brainVertices === 'undefined') {
-        temp = await createPointCloud('brain'); // or shapes.[shape]
-        brainVertices = await reducePointCount(temp, DESIRED_POINTS)
-        // brainMesh = await convertToMesh(brainVertices)
-        // meanX = every_nth(brainVertices,0, 3).reduce(sum, 0)/(brainVertices.length/3)
-        // meanY = every_nth(brainVertices,1, 3).reduce(sum, 0)/(brainVertices.length/3)
-        // meanZ = every_nth(brainVertices,2, 3).reduce(sum, 0)/(brainVertices.length/3)
-        resolution = brainVertices.length / 3;
-    }
-
     t = 0;
     stateManager(animState)
+
+    animStart = Date.now();
     $('#canvas-message').animate({'opacity': 0}, 400, function(){
         $(this).html(message_array[state][animState]).animate({'opacity': 1}, 400);
     });
 
 
     vertexCurr = vertexHome;
-    vertexVel = new Array(resolution*3).fill(0);
+    vertexVel = new Array(pointCount*3).fill(0);
 
     displacement = resetDisplacement();
     disp_flat = [...displacement.flat(2)]
-    signal_sustain = (Math.round(resolution/channels))/REDUCE_POINT_DISPLAY_FACTOR;
+    signal_sustain = (Math.round(pointCount/channels))/REDUCE_POINT_DISPLAY_FACTOR;
 
 
 // createbuffer
@@ -297,7 +287,7 @@ void main() {
 
     canvas.onmouseup = function(ev){
         holdStatus = false;
-        vertexVel = new Array(resolution*3).fill(0);
+        vertexVel = new Array(pointCount*3).fill(0);
     };
     canvas.onmousemove = function(ev){
         mouseEv = ev;
@@ -416,8 +406,8 @@ void main() {
 
 
         // Append voltage stream to array
-        displacement = updateDisplacement(displacement,signal, 1) // Update the signal of others
-        displacement = updateDisplacement(displacement,other_signal,0)// Update your signal
+        displacement = updateDisplacement(displacement,signal, 0) // Update your signal
+        displacement = updateDisplacement(displacement,other_signal,1)// Update the signal of others
         disp_flat = [...displacement.flat(2)]
 
         // Push voltage stream to displacement buffer
@@ -442,15 +432,13 @@ void main() {
         }
 
         // Get synchrony
-        if (shape_array[state][animState] == 'brain' && t > 100) {
+        if (shape_array[state][animState] == 'brain' && t > 100 && numUsers > 1) {
             // Synchrony of you and other users
             let new_sync = getPearsonCorrelation(displacement[0].flat(), displacement[1].flat());
 
             // Slowly ease to the newest synchrony value
+            synchrony.shift()
             if (!isNaN(new_sync)) {
-                if (synchrony.length == SYNCHRONY_BUFFER_SIZE) {
-                    synchrony.shift()
-                }
                 synchrony.push(new_sync)
             } else {
                 synchrony.push(0)
@@ -458,6 +446,8 @@ void main() {
         } else {
             synchrony = new Array(SYNCHRONY_BUFFER_SIZE).fill(0);
         };
+
+        console.log(synchrony)
 
         // Modify View Matrix
         mat4.invert(viewMatrix, viewMatrix);
@@ -561,5 +551,7 @@ void main() {
             t++;
         }
     };
+
+    console.log(numUsers)
     animate()
 }

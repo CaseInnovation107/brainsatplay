@@ -36,71 +36,85 @@ function createPointCloud(pointFunction, pointCount) {
     if (pointFunction == 'brain') {
         pointCloud = getBrain()
     } else if (pointFunction == 'brains'){
-        let oneBrain = reducePointCount(brainVertices, Math.floor((brainVertices.length/3)/numUsers))
-        let dim_size = Math.ceil(Math.sqrt(numUsers));
-        let delta = (2*INNER_Z)/(dim_size-1)
-        let row = 0;
-        let col = -1;
-
-        let tempBrain;
-        for (let i = 0; i < numUsers; i++) {
-            tempBrain = [...oneBrain];
-            if (i % dim_size == 0) {
-                row = 0;
-                col++;
+            let oneBrain = reducePointCount(brainVertices, Math.floor((brainVertices.length/3)/numUsers))
+            let dim_size = Math.ceil(Math.sqrt(numUsers));
+    
+            if (dim_size == 1){delta = 0; z_window = 0} else{
+                z_window = INNER_Z;
+                delta = (2*INNER_Z)/(dim_size-1)
             }
-            for (let point = 0; point < (oneBrain.length/3); point++){
-                tempBrain[3*point] /= dim_size;
-                tempBrain[3*point+1] /= dim_size;
-                tempBrain[3*point+2] /= dim_size;
-
-                tempBrain[3*point+1] += -INNER_Z + (delta) * col;
-                tempBrain[3*point+2] += -INNER_Z + (delta) * row;
-        }
-            pointCloud.push(...tempBrain);
-            row++
-        }
-    }
-    else if (pointFunction == 'voltage') {
-        pointCloud = getVoltages(pointCloud,pointCount,numUsers)
-    } else if (pointFunction == shapes.sphereShells) {
-        let dim_size = Math.ceil(Math.sqrt(numUsers));
-        let delta = (2*INNER_Z)/(dim_size-1)
-        let row = 0;
-        let col = -1;
-        for (let i = 0; i < numUsers; i++) {
-            if (i % dim_size == 0) {
-                row = 0;
-                col++;
+            let row = 0;
+            let col = -1;
+    
+            let tempBrain;
+            for (let i = 0; i < numUsers; i++) {
+                tempBrain = [...oneBrain];
+                if (i % dim_size == 0) {
+                    row = 0;
+                    col++;
+                }
+                for (let point = 0; point < (oneBrain.length/3); point++){
+                    tempBrain[3*point] /= dim_size;
+                    tempBrain[3*point+1] /= dim_size;
+                    tempBrain[3*point+2] /= dim_size;
+    
+                    tempBrain[3*point+1] += -z_window + (delta) * col;
+                    tempBrain[3*point+2] += -z_window + (delta) * row;
             }
-            for (let j = 0; j < Math.floor(pointCount / numUsers); j++) {
-                const r = () => (Math.random() - 0.5);
-                let point = pointFunction(r(), r(), r());
-
-                // Reduce point radius
-                point[0] /= dim_size;
-                point[1] /= dim_size;
-                point[2] /= dim_size;
-
-                // Shift spheres
-                point[1] += -INNER_Z + (delta) * col;
-                point[2] += -INNER_Z + (delta) * row;
-
+    
+    
+            if (numUsers == 1) {
+                pointCloud = tempBrain;
+            } else {
+                pointCloud = pointCloud.concat(tempBrain);
+            }
+                row++
+            }
+        }
+        else if (pointFunction == 'voltage') {
+            pointCloud = getVoltages(pointCloud,pointCount,numUsers)
+        } else if (pointFunction == shapes.sphereShells) {
+            let dim_size = Math.ceil(Math.sqrt(numUsers));
+            if (dim_size == 1){delta = 0; z_window = 0} else{
+                z_window = INNER_Z;
+                delta = (2*INNER_Z)/(dim_size-1)
+            }
+            let row = 0;
+            let col = -1;
+            for (let i = 0; i < numUsers; i++) {
+                if (i % dim_size == 0) {
+                    row = 0;
+                    col++;
+                }
+                for (let j = 0; j < Math.floor(pointCount / numUsers); j++) {
+                    const r = () => (Math.random() - 0.5);
+                    let point = pointFunction(r(), r(), r());
+    
+                    // Reduce point radius
+                    point[0] /= dim_size;
+                    point[1] /= dim_size;
+                    point[2] /= dim_size;
+    
+                    // Shift spheres
+                    point[1] += -z_window + (delta) * col;
+                    point[2] += -z_window + (delta) * row;
+    
+                    pointCloud.push(...point);
+                }
+                row++
+            }
+        }
+        else{
+                for (let i = 0; i < pointCount; i++) {
+                const r = () => Math.random() - 0.5;
+                const point = shapes[pointFunction](r(), r(), r());
                 pointCloud.push(...point);
             }
-            row++
         }
+        
+        // return pointCloud
+        return pointCloud;
     }
-    else{
-            for (let i = 0; i < pointCount; i++) {
-            const r = () => Math.random() - 0.5;
-            const point = pointFunction(r(), r(), r());
-            pointCloud.push(...point);
-        }
-    }
-
-    return pointCloud;
-}
 
 const shapes = {
 

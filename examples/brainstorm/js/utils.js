@@ -23,6 +23,15 @@ function sum(a,b){
     return a + b
 }
 
+function makeArr(startValue, stopValue, cardinality) {
+    var arr = [];
+    var step = (stopValue - startValue) / (cardinality - 1);
+    for (var i = 0; i < cardinality; i++) {
+      arr.push(startValue + (step * i));
+    }
+    return arr;
+  }
+
 
 function closeTutorial() {
     setTimeout(() => {
@@ -175,7 +184,7 @@ elements.forEach(function(element) {
 function resetDisplacement(){
     let displacement = [];
     let user;
-    let perUser = Math.floor(resolution/(numUsers*channels))
+    let perUser = Math.floor(pointCount/(numUsers*channels))
     for(user=0; user < numUsers; user++){
         displacement.push(new Array())
         for(let chan=0; chan < channels; chan++){
@@ -183,7 +192,7 @@ function resetDisplacement(){
         }
     }
 
-    let remainder = resolution - channels*numUsers*perUser
+    let remainder = pointCount - channels*numUsers*perUser
         for (let chan = 0; chan < channels; chan++) {
             for (user = 0; user < numUsers; user++)
                 if (remainder > 0) {
@@ -214,16 +223,20 @@ function sendSignal(channels) {
     // Generate 1 second of sample data at 512 Hz
     // Contains 8 μV / 8 Hz and 4 μV / 17 Hz
 
-    let len = duration // seconds
     let base_freq = document.getElementById("freqRange").value
+    generate_interval = Math.round(samplerate*(1/base_freq))
 
     signal = new Array(channels);
     for (let channel =0; channel < channels; channel++) {
-        signal[channel] = bci.generateSignal([(INNER_Z/2)/(2*channels)], [base_freq], samplerate, len);
+        signal[channel] = bci.generateSignal([(INNER_Z/2)/(2*channels)], [base_freq], samplerate, 1/base_freq);
     }
+    let startTime = Date.now()
+
+    let time = makeArr(startTime,startTime+(1/base_freq),generate_interval)
 
     let data = {
         ts_filtered: signal,
+        // time: time
     }
     if (!ws) {
         showMessage('No WebSocket connection');
@@ -258,7 +271,7 @@ function updateDisplacement(displacement,signal,user){
     return displacement
 }
 
-function switchToVoltage(resolution){
+function switchToVoltage(pointCount){
     // Reset View Matrix
     let viewMatrix = mat4.create();
     mat4.rotateX(viewMatrix, viewMatrix, Math.PI / 2);
@@ -267,7 +280,7 @@ function switchToVoltage(resolution){
     mat4.invert(viewMatrix, viewMatrix);
 
     // Create signal dashboard
-    let vertexHome = getVoltages([],resolution,numUsers);
+    let vertexHome = getVoltages([],pointCount,numUsers);
     let ease = true;
     let rotation = false;
     let zoom = false;
@@ -323,7 +336,7 @@ function stateManager(animState){
 
         channels = document.getElementById('channels').value;
 
-        [vertexHome, viewMatrix, ease, rotation, zoom] = switchToVoltage(resolution)
+        [vertexHome, viewMatrix, ease, rotation, zoom] = switchToVoltage(pointCount)
 
         signal = new Array(channels);
         other_signal = new Array(channels);
@@ -335,7 +348,7 @@ function stateManager(animState){
 
         displacement = resetDisplacement();
         disp_flat = [...displacement.flat(2)]
-        signal_sustain = (Math.round(resolution/channels))/(numUsers*REDUCE_POINT_DISPLAY_FACTOR);
+        signal_sustain = (Math.round(pointCount/channels))/(numUsers*REDUCE_POINT_DISPLAY_FACTOR);
         cameraHome = VOLTAGE_Z_OFFSET;
     }
     else {
@@ -348,7 +361,7 @@ function stateManager(animState){
     }
 
     if (shape_array[state][animState] != 'brain' && shape_array[state][animState] != 'voltage'){
-        vertexHome = createPointCloud(shape_array[state][animState], resolution);
+        vertexHome = createPointCloud(shape_array[state][animState], pointCount);
         ease = true;
         rotation = false;
         zoom = false;
@@ -358,4 +371,31 @@ function stateManager(animState){
         diff_x = 0;
         diff_y = 0;
     }
+}
+
+
+function announceUsers(diff){
+    let message ;
+    if (diff > 0){
+        if (diff == 1){
+            message = diff + ' user joined the brainstorm';
+        } else{
+            message = diff + ' users joined the brainstorm';
+        }
+    } else if (diff < 0){
+        if (diff == 1){
+            message = -diff + ' user left the brainstorm';
+        } else{
+            message = -diff + ' users left the brainstorm';
+        }
+    }
+    console.log(message)
+    $('#canvas-message').animate({'opacity': 0}, 800, function(){
+        $(this).html(message).animate({'opacity': 1}, 800, function() {
+        });
+    });
+    $('#canvas-message').animate({'opacity': 1}, 800, function(){
+        $(this).html(message).animate({'opacity': 0}, 800, function() {
+        });
+    });
 }

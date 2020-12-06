@@ -6,11 +6,11 @@
     <meta name=viewport content="width=device-width,initial-scale=1">
     <link rel=icon href=favicons/favicon.ico>
     <link rel="stylesheet" type="text/css" href="css/brainstorm.css"/>
-<!--    <script src="https://d3js.org/d3.v6.min.js"></script>-->
     <script type="text/javascript" src="js/webgl.js" defer></script>
     <script type="text/javascript" src="js/utils.js" defer></script>
     <script type="text/javascript" src="js/gl-matrix-min.js" defer></script>
     <script type="text/javascript" src="js/point-functions.js"></script>
+    <script type="text/javascript" src="js/networking.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.1/socket.io.min.js" integrity="sha512-/WwtKR6NnHomLo0O4w9QKc1INTPEJs7ko6u2aBTA1paPldhPl8LtXsi7a35iEZ69+9P5dcgVNESG8hrP4Y2t3w==" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bcijs@1.8.0/dist/bci.min.js"></script>
@@ -34,30 +34,24 @@
         <div class="icon menuicon"><a href="https://brainsatplay.com" class="logo"><h3>Brains@Play</h3></a></div>
         </a>
         <div class="icon menuicon" onclick="state = 1">
-            <a><i class="fas fa-home fa-2x"></i></a><p>Main UI</p>
+            <a><i class="fas fa-brain fa-2x"></i></a><p>Main UI</p>
         </div>
         <div class="icon menuicon" onclick="state = 2">
             <a><i class="fas fa-wave-square fa-2x"></i></a><p>Inspect Voltages</p>
         </div>
-        <div class="icon menuicon" onclick="openTutorial()">
+        <!-- <div class="icon menuicon" onclick="openTutorial()">
             <a><i class="fas fa-book-open fa-2x"></i></a><p>Tutorial</p>
+        </div> -->
+
+        <!-- <a href="./app/brainstorm" download="proposed_file_name"> -->
+            <div class="icon menuicon" onclick="window.open(`/downloadapp`)"">
+            <a><i class="fas fa-desktop fa-2x"></i></a><p>Download Desktop App</p>
         </div>
+    <!-- </a> -->
         <div class="user-info">
             <h4>Your Info</h4>
             <p id=userId></p>
         </div>
-<!--        <div class="icon menuicon" onclick="window.open('https://github.com/Mousai-Neurotechnologies/brainstorm-client','mywindow');">-->
-<!--            <a><i class="fab fa-python fa-2x"></i></a><p>Download Python Client</p>-->
-<!--        </div>-->
-<!--        <div class="icon menuicon" id="login">-->
-<!--            <a><i class="fas fa-arrow fa-2x"></i></a><p>Login</p>-->
-<!--        </div>-->
-<!--        <div class="icon menuicon" id="wsButton">-->
-<!--            <a><i class="fas fa-arrow fa-2x"></i></a><p>Open Websocket</p>-->
-<!--        </div>-->
-<!--        <div class="icon menuicon" id="logout">-->
-<!--            <a><i class="fas fa-arrow fa-2x"></i></a><p>Logout</p>-->
-<!--        </div>-->
     </div>
 
     <!-- Chat Bar-->
@@ -144,106 +138,6 @@
 
 <script>
 
-    // WebSocket Setup
-    let messages = []
-    let option = 'server';
-    let url;
-    if (option  === 'local'){
-        url = new URL('http://localhost');
-    } else if (option === 'server'){
-        url = new URL('https://brainsatplay.azurewebsites.net/');
-    }
-
-    let ws;
-    clientAction('login','POST');
-    
-
-    function showMessage(res) {
-        // let userId = getCookie(res,'userId')
-        if (res.userId != undefined){
-            document.getElementById('userId').innerHTML = 'Client ID: ' + res.userId
-        } else {
-            console.log(`\n${res}`);
-        }
-    }
-
-    function getCookie(req,name) {
-        const value = `; ${req.headers.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-    }
-
-    function handleResponse(res) {
-        return res.ok
-            ? res.json().then((data) => data)
-            : Promise.reject(new Error('Unexpected response'));
-    }
-
-    function clientAction(destination,method){
-        fetch(url + destination, { method: method,
-            mode: 'cors',
-            credentials: 'include'
-        }).then(handleResponse)
-            .then(showMessage)
-            .catch(function (err) {
-                showMessage(err.message);
-            });
-    }
-
-    function establishWebsocketConnection() {
-        if (ws) {
-            ws.onerror = ws.onopen = ws.onclose = null;
-            ws.close();
-        }
-
-        if (url.protocol == 'http:'){
-        ws = new WebSocket(`ws://` + url.hostname);
-        } else if (url.protocol == 'https:'){
-            ws = new WebSocket(`wss://` + url.hostname);
-        } else{
-            console.log('invalid protocol')
-            return
-        }
-
-        ws.onerror = function () {
-            showMessage('WebSocket error');
-        };
-
-        ws.onopen = function () {
-            showMessage('WebSocket connection established');
-        };
-
-        ws.onmessage = function (msg) {
-            let obj = JSON.parse(msg.data);
-            if (obj.destination == 'chat'){
-                $('#messages').append($('<li>').text(obj.msg));
-            }
-            else if (obj.destination == 'bci'){
-                passSignal(obj)
-            }
-        };
-
-        ws.onclose = function () {
-            showMessage('WebSocket connection closed');
-            // document.getElementById('app').innerHTML = 'Websocket closed'
-            ws = null;
-        };
-    }
-
-    // login.onclick = function () {
-    //     clientAction('/login','POST');
-    // };
-    //
-    // logout.onclick = function () {
-    //     clientAction('/logout','POST');
-    // };
-    //
-    // wsButton.onclick = function () {
-    //     establishWebsocketConnection();
-    // };
-
-    let numUsers = 4; // Currently hardcoded; derive dynamically from server later
-
 
     // WebGL Setup
     let canvas = document.getElementById('webgl');
@@ -253,11 +147,11 @@
     let gl = canvas.getContext('webgl')
     // shape_array = ['brain', 'voltage', shapes.sphereShell, shapes.sphereShell2, shapes.boxShell, shapes.circularHyperboloid]
     // render_array = [gl.POINTS, gl.POINTS, gl.POINTS, gl.POINTS, gl.POINTS, gl.POINTS]
-    let shape_array = [[shapes.sphereShells,'brains'], ['brain'], ['voltage']]
-    let anim_array = [[5.0,3.0],[false],[false]] // In seconds; false has no animation
-    let render_array = [[gl.POINTS, gl.POINTS],[gl.POINTS], [gl.LINES]];
-    let message_array = [[numUsers + ' users online. scanning brains...', 'welcome to the brainstorm'], [''], ['']];
-    let ease_array = [[.1, .1],[.1], [.1]];
+    let shape_array = [['sphereShells','brains'], ['brain'], ['voltage'],['brains']]
+    let anim_array = [[5.0,3.0],[false],[false],[false]] // In seconds; false has no animation
+    let render_array = [[gl.POINTS, gl.POINTS],[gl.POINTS], [gl.LINES],[gl.POINTS],[gl.POINTS]];
+    let message_array = [['scanning your brain...', 'welcome to the brainstorm'], [''], [''], ['']];
+    let ease_array = [[.1, .1],[.1], [.1], [.1]];
 
     let state = 0;
     let prevState = 0;
@@ -278,9 +172,9 @@
 
     // WebGL Variables
     let DESIRED_POINTS = 1e5/2; // 80000
-    let REDUCE_POINT_DISPLAY_FACTOR = 300;
+    let REDUCE_POINT_DISPLAY_FACTOR = 600;
     let signal_sustain;
-    let resolution;
+    let pointCount;
     let INITIAL_Z_OFFSET = 1.7;
     let VOLTAGE_Z_OFFSET = .5;
     let AUTO_ROTATION_X = 0.0; //0.2;
@@ -309,9 +203,8 @@
     // Signal Generation Variables
     let channels = 1;
     let generate = false;
-    let duration = 1 // seconds
     let samplerate = 125; // This is almost definitely wrong
-    let generate_interval = Math.round(duration*samplerate); // seconds
+    let generate_interval; // updated when generate is true
     let count = 0;
 
     // Distortion Variables
@@ -329,6 +222,22 @@
     }
     let passed_signal = []
 
+    // WebSocket Setup
+    let messages = []
+    let option = 'local';
+    let url;
+    if (option  === 'local'){
+        url = new URL('http://localhost');
+    } else if (option === 'server'){
+        url = new URL('https://brainsatplay.azurewebsites.net/');
+    }
+
+    let brains = undefined;
+    let numUsers = 1;
+    let userId = undefined;
+
+    let ws;
+
     $(function () {
         $('form').submit(function(e) {
             e.preventDefault(); // prevents page reloading
@@ -345,22 +254,23 @@
         });
     });
 
+    // Begin the Brainstorm
+    setCookie('connectionType','interface', 30)
+    clientAction('login','POST');
+
+    $('#canvas-message').animate({'opacity': 0}, 400, function(){
+        $(this).html('loading...').animate({'opacity': 1}, 400);
+    });
+
     function initialize() {
 
-        establishWebsocketConnection();
-
-        $('#canvas-message').animate({'opacity': 0}, 100, function(){
-            $(this).html(`
-loading...
-<!--<div>-->
-<!--<h3>Welcome to the Brainstorm</h3>-->
-<!--<p>Experience a social neurotechnology platform that enables you to manage your brain data and couple with other minds across social, cultural, and political boundaries.</p>-->
-<!--</div>-->
-`).animate({'opacity': 1}, 0);
-        });
-
-        setTimeout(() => {}, 50000);
-        particleBrain()
+        createPointCloud('brain').then((cloud) => {
+                brainVertices = reducePointCount(cloud, DESIRED_POINTS);
+                pointCount = brainVertices.length / 3;
+                establishWebsocketConnection();
+                particleBrain()
+        }
+        )
     }
 
 </script>

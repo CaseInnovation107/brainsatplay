@@ -23,8 +23,10 @@ var port = normalizePort(process.env.PORT || '80');
 //
 
 const app = express();
-const map = new Map();
-app.set('map', map);
+const brains = new Map();
+const interfaces = new Map();
+app.set('brains', brains);
+app.set('interfaces', interfaces);
 app.set('example', example);
 
 
@@ -104,7 +106,6 @@ const initRoutes = require("./routes/web");
 initRoutes(app);
 
 // development error handler
-console.log(app.get('env'))
 if (app.get('env') === 'development') {
   app.use(function(err, req, res, next) {
     res.status(err.status || 500);
@@ -157,8 +158,9 @@ server.on('upgrade', function (request, socket, head) {
       return;
     }
     let command;
-    if (app.get('map').has(userId) == true){
-      command = 'mirror'
+    const type = getCookie(request, 'connectionType') + 's'
+    if (app.get(type).has(userId) == true){
+      command = type
     } else {
       command = 'init'
     }
@@ -170,25 +172,39 @@ server.on('upgrade', function (request, socket, head) {
 wss.on('connection', function (ws, command, request) {
 
   const userId =  getCookie(request,'userId')
+  const type = getCookie(request,'connectionType') + 's'
 
   let mirror_id;
 
-  if (command === 'mirror'){
-    mirror_id = app.get('map').get(userId).length
-    app.get('map').get(userId).push(ws);
+  if (command === 'interfaces' || command === 'brains'){
+    mirror_id = app.get(command).get(userId).length
+    app.get(command).get(userId).push(ws);
   }
-  else if (command === 'init') { 
+  else if (command === 'init'){ 
     mirror_id = 0;
     let list = [ws]
-    app.get('map').set(userId, list);
-  } else {
-    console.log('error: incorrect connection command')
+    app.get(type).set(userId, list);
   }
+
+  let str = JSON.stringify({
+    msg: app.get('interfaces').size,
+    destination: 'nBrains'
+});
+
+  // Broadcast new number of brains to all interfacea
+  app.get('interfaces').forEach(function each(clients, id) {
+    clients.forEach(function allClients(client){
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(str);
+      }
+    })
+  });
+
     ws.on('message', function (str) {
       let obj = JSON.parse(str);
       if (obj.destination == 'chat'){
-        // Broadcast to all clients
-        app.get('map').forEach(function each(clients, id) {
+        // Broadcast chat messages to all interfaces
+        app.get('interfaces').forEach(function each(clients, id) {
           clients.forEach(function allClients(client){
             if (client.readyState === WebSocket.OPEN) {
               client.send(str);
@@ -202,10 +218,10 @@ wss.on('connection', function (ws, command, request) {
             }
         )
       } if (obj.destination == 'bci'){
-        // Broadcast to all clients (even your mirrors) EXCEPT YOURSELF
-        app.get('map').forEach(function each(clients, id) {
+        // Broadcast brain signals to all interfaces EXCEPT YOURSELF
+        app.get('interfaces').forEach(function each(clients, id) {
           obj["user"] = 'other'
-          str = JSON.stringify(obj)
+          let str = JSON.stringify(obj)
           if (id != userId) {
             clients.forEach(function allClients(client){
               if (client.readyState === WebSocket.OPEN) {
@@ -214,22 +230,43 @@ wss.on('connection', function (ws, command, request) {
             })
           } else{
             obj["user"] = 'mirror'
-            str = JSON.stringify(obj)
+            let str = JSON.stringify(obj)
             clients.forEach(function allClients(client, inner_id){
               if (client.readyState === WebSocket.OPEN && inner_id != mirror_id) {
                 client.send(str);
               }
             })
           }
-        })};
+        })
+
+        let str = JSON.stringify({
+          msg: app.get('interfaces').size,
+          destination: 'nBrains'
+      });
+      };
     });
 
     ws.on('close', function () {
-      if (app.get('map').get(userId).length == 1){
-      app.get('map').delete(userId);
+      if (app.get(type).get(userId).length == 1){
+      app.get(type).delete(userId);
       } else {
-        app.get('map').get(userId).splice(mirror_id,1)
+        app.get(type).get(userId).splice(mirror_id,1)
       }
+
+      let str = JSON.stringify({
+        msg: app.get('interfaces').size,
+        destination: 'nBrains'
+    });
+    
+      // Broadcast new number of brains to all interfacea
+      app.get('interfaces').forEach(function each(clients, id) {
+        clients.forEach(function allClients(client){
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(str);
+          }
+        })
+      });
+      
     });
 });
 

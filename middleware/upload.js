@@ -20,7 +20,6 @@ var storage = new GridFsStorage({
   }
 });
 
-console.log('sending file to storage')
 var uploadFiles = multer({ storage: storage }).fields([{
   name: 'game-image', maxCount: 1
 }, {
