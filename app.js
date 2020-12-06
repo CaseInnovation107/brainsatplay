@@ -187,7 +187,8 @@ wss.on('connection', function (ws, command, request) {
   }
 
   let str = JSON.stringify({
-    msg: app.get('interfaces').size,
+    n: +1,
+    user: userId,
     destination: 'nBrains'
 });
 
@@ -254,7 +255,8 @@ wss.on('connection', function (ws, command, request) {
       }
 
       let str = JSON.stringify({
-        msg: app.get('interfaces').size,
+        n: -1,
+        user: userId,
         destination: 'nBrains'
     });
     

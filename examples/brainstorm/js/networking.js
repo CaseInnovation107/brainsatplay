@@ -56,17 +56,14 @@ function establishWebsocketConnection() {
         else if (obj.destination == 'bci'){
             passSignal(obj)
         } else if (obj.destination == 'nBrains'){
-            newUsers = obj.msg;
-            if (numUsers != newUsers){
-                let diff = newUsers - numUsers
-                numUsers = newUsers
-                if (state != 0){
-                announceUsers(diff)
+            update = obj.n;
+            numUsers += update
+            if (state != 0){
+                announceUsers(update)
                 stateManager(animState)
             }
             displacement = resetDisplacement();
             }
-        }
         else {
             console.log(obj)
         }
