@@ -36,10 +36,16 @@
         <div class="icon menuicon"><a href="https://brainsatplay.com" class="logo"><h3>Brains@Play</h3></a></div>
         </a>
         <div class="icon menuicon" onclick="state = 1">
-            <a><i class="fas fa-brain fa-2x"></i></a><p>Main UI</p>
+            <a><i class="fas fa-brain fa-2x"></i></a><p>View your Brain Activity</p>
         </div>
         <div class="icon menuicon" onclick="state = 2">
-            <a><i class="fas fa-wave-square fa-2x"></i></a><p>Inspect Voltages</p>
+            <a><i class="fas fa-wave-square fa-2x"></i></a><p>Inspect Raw Voltages</p>
+        </div>
+        <div class="icon menuicon" onclick="state = 3">
+            <a><i class="fas fa-users fa-2x"></i></a><p>View Users</p>
+        </div>
+        <div class="icon menuicon" onclick="state = 4">
+            <a><i class="fas fa-users-cog fa-2x"></i></a><p>Inspect Group Synchrony</p>
         </div>
         <!-- <div class="icon menuicon" onclick="openTutorial()">
             <a><i class="fas fa-book-open fa-2x"></i></a><p>Tutorial</p>
@@ -76,7 +82,7 @@
 <div id="canvas-container">
     <canvas id='webgl'></canvas>
 </div>
-<div id="tutorial">
+<!-- <div id="tutorial">
     <div id="tutorial-text">
         <i class="fas fa-brain fa-3x"></i>
         <h1>Welcome to Brainstorm!</h1>
@@ -90,8 +96,8 @@
             </button>
         </div>
     </div>
-</div>
-<div id="parameters">
+</div> -->
+<!-- <div id="parameters">
     <div id="param-toggle" class="toggle"><div class="icon"><i class="fas fa-magic fa-2x"></i></div></div>
     <div >
         <div>
@@ -121,7 +127,7 @@
             <div><span id = 'sync-dot' class="dot"></span></div>
         </div>
     </div>
-</div>
+</div> -->
     <div class="message-container">
         <span id="canvas-message"></span>
     </div>
@@ -147,11 +153,14 @@
     let gl = canvas.getContext('webgl')
     // shape_array = ['brain', 'voltage', shapes.sphereShell, shapes.sphereShell2, shapes.boxShell, shapes.circularHyperboloid]
     // render_array = [gl.POINTS, gl.POINTS, gl.POINTS, gl.POINTS, gl.POINTS, gl.POINTS]
-    let shape_array = [['sphereShells','brains'], ['brain'], ['voltage'],['brains']]
-    let anim_array = [[5.0,3.0],[false],[false],[false]] // In seconds; false has no animation
-    let render_array = [[gl.POINTS, gl.POINTS],[gl.POINTS], [gl.LINES],[gl.POINTS]];
-    let message_array = [['scanning your brain...', 'welcome to the brainstorm'], [''], [''], ['']];
-    let ease_array = [[.1, .1],[.1], [.1], [.1]];
+    let shape_array = [['sphereShells','brains'], ['brain'], ['voltage'],['brains'],['brain']]
+    let anim_array = [[5.0,3.0],[false],[false],[false],[false]] // In seconds; false has no animation
+    let render_array = [[gl.POINTS, gl.POINTS],[gl.POINTS],[gl.LINES],[gl.POINTS],[gl.POINTS]];
+    let message_array = [['scanning your brain...', 'welcome to the brainstorm'], [''], [''], [''], ['']];
+    let ease_array = [[.1, .1],[.1], [.1], [.1], [.1]];
+
+    let effects = [false, 'signals','synchrony']
+    let effect_array = [[false,false],['signals'],[false],[false],['synchrony']] // In seconds; false has no animation
 
     let state = 0;
     let prevState = 0;
@@ -169,6 +178,9 @@
 
     let positionBuffer;
     let dispBuffer;
+    let colorBuffer;
+
+    let uniformLocations;
 
     // WebGL Variables
     let DESIRED_POINTS = 1e5/2; // 80000
@@ -180,6 +192,7 @@
     let AUTO_ROTATION_X = 0.0; //0.2;
     let INNER_Z = 2*VOLTAGE_Z_OFFSET;
 
+    let color;
     let displacement = [];
     let disp_flat = [];
     SYNCHRONY_BUFFER_SIZE = 100;
@@ -206,6 +219,27 @@
     let samplerate = 125; // This is almost definitely wrong
     let generate_interval; // updated when generate is true
     let count = 0;
+
+    // EEG Coordinates
+    eegCoords = [
+        [-0.25,0.75,-0.25], // 1 Fp1
+        [0.25,0.75,-0.25], // 2 Fp2
+        [-0.25,0.00,.75], // 3 C3
+        [0.25,0.00,.75], // 4 C4
+        [-0.75,-0.65,-0.10], // 5 P7
+        [0.75,-0.65,-0.10], // 6 P8
+        [-0.25,-1.25,0.00], // 7 O1
+        [0.25,-1.25,0.00], // 8 O2
+        [-0.75,0.35,-0.20], // 9 F7
+        [0.75,0.35,-0.20], // 10 F8
+        [-0.25,0.60,.50], // 11
+        [0.25,0.60,.50], // 12
+        [-0.75,-0.15,-0.15], // 13 T7
+        [0.75,-0.15,-0.15], // 14 T8
+        [-0.25,-0.75,.60], // 15
+        [0.25,-0.75,.60], // 16
+    ]
+    passedEEGCoords = eegCoords
 
     // Distortion Variables
     let distort = false;

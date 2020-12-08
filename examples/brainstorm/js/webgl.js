@@ -5,29 +5,6 @@
 
 function particleBrain() {
 
-    // ------------------------------------- P5 Ported Controls ------------------------------------ //
-    // Initialize Channel Controls
-    const selectElement = document.getElementById('channels');
-
-    selectElement.addEventListener('change', (event) => {
-
-        channels = parseFloat(event.target.value);
-
-        SIGNAL_SUSTAIN = Math.round(99/channels)
-
-        if (SIGNAL_SUSTAIN%2 == 0){
-            SIGNAL_SUSTAIN += 1;
-        }
-
-        [vertexHome, , ease, rotation, zoom] = switchToVoltage(pointCount)
-
-        brains.initializeUserBuffers();
-        displacement = brains.userBuffers;
-    });
-
-
-    // ------------------------------------- P5 Ported Variables ------------------------------------ //
-
     if (!gl) {
         throw new Error('WebGL not supported')
     }
@@ -44,21 +21,12 @@ function particleBrain() {
 
 
     vertexCurr = vertexHome;
-    vertexVel = new Array(pointCount*3).fill(0);
+    vertexVel = new Array(pointCount*3).fill(0.0);
 
     // displacement = resetDisplacement();
     displacement = brains.userBuffers;
     disp_flat = [...displacement.flat(2)]
 
-// createbuffer
-// load vertexData into buffer
-    positionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexCurr), gl.DYNAMIC_DRAW);
-
-    dispBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, dispBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(disp_flat), gl.DYNAMIC_DRAW);
 
 // create vertex shader
     const vertexShader = gl.createShader(gl.VERTEX_SHADER)
@@ -68,26 +36,28 @@ precision mediump float;
 attribute vec3 position;
 attribute float z_displacement;
 
+vec3 color;
 varying vec3 vColor;
 
+uniform int effect;
 uniform mat4 matrix;
 uniform float u_distortion;
 uniform float u_noiseCoeff;
 uniform float synchrony;
 uniform float u_time;
 uniform float aspect;
+uniform vec3 eeg_coords[${eegCoords.length}];
+uniform float eeg_power[${eegCoords.length}];
 
-float sync_scaling = 0.5+(0.5*synchrony);
+float sync_scaling = 0.5+(0.5*synchrony); 
+
 float ambient_noise_multiplier = (0.5-sync_scaling);
-
 
 vec3 distortion_noise;
 vec3 ambient_noise;
 
 vec4 positionProjected;
 vec2 currentScreen;
-
-
 
 //Classic Perlin 3D Noise 
 //by Stefan Gustavson
@@ -166,15 +136,44 @@ float cnoise(vec3 P){
 
 void main() {
 
-if (synchrony > 0.0) {
-    ambient_noise_multiplier = 0.0;
-}
+    if (synchrony > 0.0) {
+        ambient_noise_multiplier = 0.0;
+    }
     float x = position.x;
      float y = position.y;
      float z = position.z;
      distortion_noise = vec3(0,0,u_noiseCoeff) * cnoise(vec3(x + u_distortion, y + u_distortion,z + u_distortion));
      ambient_noise = vec3(0.0,0.01+5.0*ambient_noise_multiplier,0.01+5.0*ambient_noise_multiplier) * cnoise(vec3(x + u_time, y + u_time,z + u_time));
-     vColor = vec3(.5-synchrony,.5,synchrony + .5);
+     
+     // Initialize color at zero
+     vColor.x = .5;
+     vColor.y = .5;
+     vColor.z = .5;
+
+     // Add color effects
+     if (effect == 1){
+        vColor.x = 1.0;
+        vColor.y = 1.0;
+        vColor.z = 1.0;
+        for (int i = 0; i < ${eegCoords.length}; i++){
+            if (abs(distance(eeg_coords[i],position)) <= 0.75){
+                if (eeg_power[i] > 0.0){
+                    vColor.y -= 0.5*(eeg_power[i])*(1.0-pow(abs(distance(eeg_coords[i],position)),2.0));
+                    vColor.z -= 0.2*(eeg_power[i])*(1.0-pow(abs(distance(eeg_coords[i],position)),2.0));
+                } else if (eeg_power[i] < 0.0){
+                    vColor.x += 0.5*(eeg_power[i])*(1.0-pow(abs(distance(eeg_coords[i],position)),2.0));
+                    vColor.y += 0.2*(eeg_power[i])*(1.0-pow(abs(distance(eeg_coords[i],position)),2.0));
+                }
+            }  else if (eeg_power[i] == 0.0){
+                vColor.x = 0.5;
+                vColor.y = 0.5;
+                vColor.z = 0.5;
+            }
+        }
+     } else if (effect == 2){
+        vColor = vec3(.5-synchrony,.5,synchrony + .5);
+     } 
+
      positionProjected = matrix * vec4((x+distortion_noise.x+ambient_noise.x),(y+distortion_noise.y+ambient_noise.y),(z+distortion_noise.z+z_displacement+ambient_noise.z),1) * vec4(sync_scaling,sync_scaling,sync_scaling,1.0);
      currentScreen = positionProjected.xy / positionProjected.w;
      // currentScreen.x *= aspect;
@@ -206,15 +205,19 @@ void main() {
     gl.attachShader(program, fragmentShader);
     gl.linkProgram(program);
 
-// enable vertex attributes
+// create buffers and enable vertex attributes
+    positionBuffer = gl.createBuffer();
     const positionLocation = gl.getAttribLocation(program, `position`);
     gl.enableVertexAttribArray(positionLocation);
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexCurr), gl.DYNAMIC_DRAW);
     gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
 
+    dispBuffer = gl.createBuffer();
     const dispLocation = gl.getAttribLocation(program, `z_displacement`);
     gl.enableVertexAttribArray(dispLocation);
     gl.bindBuffer(gl.ARRAY_BUFFER, dispBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(disp_flat), gl.DYNAMIC_DRAW);
     gl.vertexAttribPointer(dispLocation, 1, gl.FLOAT, false, 0, 0);
 
 // draw
@@ -224,15 +227,29 @@ void main() {
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
     // matrix code
-    const uniformLocations = {
+    uniformLocations = {
+        effect: gl.getUniformLocation(program,`effect`),
         matrix: gl.getUniformLocation(program, `matrix`),
         u_time: gl.getUniformLocation(program, `u_time`),
         distortion: gl.getUniformLocation(program, `u_distortion`),
         noiseCoeff: gl.getUniformLocation(program, `u_noiseCoeff`),
         synchrony: gl.getUniformLocation(program, `synchrony`),
         aspect: gl.getUniformLocation(program, `aspect`),
-
+        eeg_coords: gl.getUniformLocation(program,`eeg_coords`),
+        eeg_power: gl.getUniformLocation(program,`eeg_power`)
     };
+
+    passedEEGCoords = eegCoords.map((arr,ind) => {
+        if (ind >= channels){
+            return [NaN,NaN,NaN]
+        } else {
+            return arr
+        } 
+    })
+
+    gl.uniform3fv(uniformLocations.eeg_coords, new Float32Array(passedEEGCoords.flat()));
+    gl.uniform1i(uniformLocations.effect, effects.indexOf(effect_array[state][animState]));
+
 
     const modelMatrix = mat4.create();
 
@@ -299,7 +316,6 @@ void main() {
             cameraCurr += scroll / 100;
             mat4.translate(viewMatrix, viewMatrix, [0, 0, cameraCurr]);
             mat4.invert(viewMatrix, viewMatrix);
-            // cameraHome = cameraCurr;
         }
     };
 
@@ -354,11 +370,15 @@ void main() {
         }
 
 
-        // Modify State
+        // Update State
         if (state != prevState){
             animState = 0;
-            t = 0;
             stateManager(animState);
+
+            // Change effect
+            gl.uniform1i(uniformLocations.effect, effects.indexOf(effect_array[state][animState]));
+            
+            // Start animation and associated canvas message
             animStart = Date.now()
             $('#canvas-message').animate({'opacity': 0}, 400, function(){
                 $(this).html(message_array[state][animState]).animate({'opacity': 1}, 400);
@@ -368,7 +388,6 @@ void main() {
         // Update Animation
         if (anim_array[state][animState] && ((Date.now() - animStart)/1000 > anim_array[state][animState])){
 
-            t = 0;
 
             // If there is a shape within the current state to animate to
             if ((anim_array[state].length-1) > animState){
@@ -381,6 +400,11 @@ void main() {
             }
 
             stateManager(animState);
+
+            // Change effect
+            gl.uniform1i(uniformLocations.effect, effects.indexOf(effect_array[state][animState]));
+            
+            // Start animation and associated canvas message
             animStart = Date.now()
             $('#canvas-message').animate({'opacity': 0}, 400, function(){
                 $(this).html(message_array[state][animState]).animate({'opacity': 1}, 400);
@@ -409,8 +433,7 @@ void main() {
         if (shape_array[state][animState] == 'voltage') {
             gl.bindBuffer(gl.ARRAY_BUFFER, dispBuffer)
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(disp_flat), gl.DYNAMIC_DRAW);
-        }
-
+        } 
         // Update rotation speeds
         moveStatus = false;
         diff_x *= (1-ease_array[state][animState]);
@@ -470,8 +493,34 @@ void main() {
         gl.uniform1f(uniformLocations.noiseCoeff,distortion/5);
         gl.uniform1f(uniformLocations.distortion, distortion/100);
         gl.uniform1f(uniformLocations.u_time, t/200);
-        gl.uniform1f(uniformLocations.synchrony, synchrony.reduce(sum, 0) / synchrony.length);
+        gl.uniform1f(uniformLocations.synchrony, average(synchrony));
         gl.uniform1f(uniformLocations.aspect, window.innerWidth/window.innerHeight);
+
+        let avg = [];
+
+        // Update 3D brain color with your data
+        for (let channel = 0; channel < eegCoords.length; channel++){
+            if (displacement[0].length > channel){
+            avg.push(averagePower(displacement[0][channel]));
+            } else {
+                avg.push(0);
+            }
+        }
+
+        let totalAvg = average(avg);
+        let std = standardDeviation(avg);
+
+        let relPowers = new Array(eegCoords.length).fill(0)
+        let pow;
+        for (let channel = 0; channel < avg.length; channel++){
+            pow = (avg[channel] - totalAvg)/std;
+            if (isNaN(pow)){
+                relPowers[channel] = 0;
+            } else {
+                relPowers[channel] = pow;
+            }
+        }
+        gl.uniform1fv(uniformLocations.eeg_power, new Float32Array(relPowers));
 
 
         // Ease camera
@@ -535,19 +584,7 @@ void main() {
         }
 
         // Draw
-
         gl.drawArrays(render_array[state][animState], 0, vertexCurr.length / 3);
-
-        // Update Simple Synchrony Display
-        let sync_average = synchrony.reduce(sum, 0) / synchrony.length
-
-        if (sync_average > 0) {
-            document.getElementById('sync-dot').style.backgroundColor = 'rgb(118, 190, 255)';
-        } else {
-            document.getElementById('sync-dot').style.backgroundColor = 'rgb(255, 118, 233)';
-        }
-        document.getElementById('sync-dot').style.width = (Math.abs(sync_average) * 50).toString() + 'px';
-        document.getElementById('sync-dot').style.height = (Math.abs(sync_average) * 50).toString() + 'px';
 
         // Update states for next animation loop
         prevState = state;

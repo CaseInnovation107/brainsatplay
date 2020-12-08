@@ -161,6 +161,7 @@ server.on('upgrade', function (request, socket, head) {
     const type = getCookie(request, 'connectionType') + 's'
     if (app.get(type).has(userId) == true){
       command = type
+      console.log('adding mirror of userId: ' + id)
     } else {
       command = 'init'
     }
@@ -184,32 +185,37 @@ wss.on('connection', function (ws, command, request) {
     mirror_id = 0;
     let list = [ws]
     app.get(type).set(userId, list);
+    console.log('adding userId: ' + userId + ' to the brainstorm')
   }
 
     let initStr = JSON.stringify({
-      n: app.get('interfaces').size,
-      ids: Object.keys(Object.fromEntries(app.get('interfaces'))),
+      n: app.get('brains').size,
+      ids: Object.keys(Object.fromEntries(app.get('brains'))),
       destination: 'init'
   });
 
   ws.send(initStr)
 
-  let str = JSON.stringify({
-    n: +1,
-    id: userId,
-    destination: 'BrainsAtPlay'
-  });
+    if (type === 'brains'){
 
-  // Broadcast new number of brains to all interfacea
-  app.get('interfaces').forEach(function each(clients, id) {
-    clients.forEach(function allClients(client){
-      if (client.id != userId){
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(str);
+      let str = JSON.stringify({
+        n: +1,
+        id: userId,
+        destination: 'BrainsAtPlay'
+      });
+
+    // Broadcast new number of brains to all interfacea
+    app.get('interfaces').forEach(function each(clients, id) {
+      clients.forEach(function allClients(client){
+        if (client.id != userId){
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(str);
+        }
       }
-    }
-    })
-  });
+      })
+    });
+
+}
 
     ws.on('message', function (str) {
       let obj = JSON.parse(str);

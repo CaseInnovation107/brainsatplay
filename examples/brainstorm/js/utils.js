@@ -19,9 +19,54 @@
 //     return data
 // }
 
-function sum(a,b){
-    return a + b
+function sum(acc,cur){
+    return acc + cur
 }
+
+
+function innerLengths(nestedArrays){
+    return nestedArrays.map((innerArray) => {
+        return innerArray.length;
+    }
+    )
+}
+
+function max(arr){
+    return arr.reduce((acc,cur) => {
+        return Math.max(acc,cur);
+    })
+}
+
+
+
+function squareDiffs(data){
+    let avg = average(data)
+    let sqD = data.map(val => {
+        var diff = val - avg;
+        return diff * diff;
+  })
+  return(sqD)
+}
+
+function power(acc,cur){
+    return acc + ((cur*cur)/2)
+}
+
+function average(data){
+    return data.reduce(sum, 0) / data.length;
+  }
+
+  function averagePower(data){
+    return (data.reduce(power, 0))/data.length;
+  }
+
+  function standardDeviation(values){
+    let sqD = squareDiffs(values)
+    var aSqD = average(sqD);
+    var stdDev = Math.sqrt(aSqD);
+    return stdDev;
+  }
+  
 
 function makeArr(startValue, stopValue, cardinality) {
     var arr = [];
@@ -219,7 +264,7 @@ function sendSignal(channels) {
 
     let signal = new Array(channels);
     for (let channel =0; channel < channels; channel++) {
-        signal[channel] = bci.generateSignal([(INNER_Z/2)/(2*channels)], [base_freq], samplerate, 1/base_freq);
+        signal[channel] = bci.generateSignal([((INNER_Z/2)/(2*channels))+((channel)*.01)], [base_freq+(channel)], samplerate, 1/base_freq);
     }
     let startTime = Date.now()
 
@@ -256,7 +301,6 @@ function switchToVoltage(pointCount){
     let zoom = false;
 
     return [vertexHome, viewMatrix, ease, rotation, zoom]
-
 }
 
 function distortToggle(){
@@ -301,18 +345,16 @@ function stateManager(animState){
         ease = true;
         rotation = true;
         zoom = true;
-    }
+    } 
 
     if (shape_array[state][animState] == 'voltage'){
-
-        channels = document.getElementById('channels').value;
 
         [vertexHome, viewMatrix, ease, rotation, zoom] = switchToVoltage(pointCount)
 
         brains.initializeUserBuffers();
         displacement = brains.userBuffers;
         disp_flat = [...displacement.flat(2)]
-        cameraHome = VOLTAGE_Z_OFFSET;
+        cameraHome = VOLTAGE_Z_OFFSET; 
     }
     else {
         viewMatrix = mat4.create();
@@ -341,15 +383,18 @@ function announceUsers(diff){
     let message ;
     if (diff > 0){
         if (diff == 1){
-            message = diff + ' user joined the brainstorm';
+            message = diff + ' brain joined the brainstorm';
         } else{
-            message = diff + ' users joined the brainstorm';
+            message = diff + ' brains joined the brainstorm';
         }
     } else if (diff < 0){
-        if (diff == 1){
-            message = -diff + ' user left the brainstorm';
-        } else{
-            message = -diff + ' users left the brainstorm';
+        if (brains.users.size == 0){
+            message = 'all brains left the brainstorm';
+        }
+        else if (diff == -1){
+            message = -diff + ' brain left the brainstorm';
+        } else {
+            message = -diff + ' brains left the brainstorm';
         }
     }
     console.log(message)
@@ -361,4 +406,49 @@ function announceUsers(diff){
         $(this).html(message).animate({'opacity': 0}, 800, function() {
         });
     });
+}
+
+function announcement(message){
+    console.log(message)
+    $('#canvas-message').animate({'opacity': 0}, 800, function(){
+        $(this).html(message).animate({'opacity': 1}, 800, function() {
+        });
+    });
+    $('#canvas-message').animate({'opacity': 1}, 800, function(){
+        $(this).html(message).animate({'opacity': 0}, 800, function() {
+        });
+    });
+}
+
+
+function updateChannels(newChannels) {
+        
+        if (channels != newChannels) {
+            channels = newChannels;
+        SIGNAL_SUSTAIN = Math.round(99/channels)
+
+        if (SIGNAL_SUSTAIN%2 == 0){
+            SIGNAL_SUSTAIN += 1;
+        }
+
+        if (shape_array[state][animState] == 'voltage') {
+            [vertexHome, , ease, rotation, zoom] = switchToVoltage(pointCount)
+        }
+
+        passedEEGCoords = eegCoords.map((arr,ind) => {
+            if (ind >= channels){
+                return [NaN,NaN,NaN]
+            } else {
+                return arr
+            } 
+        })
+
+        gl.uniform3fv(uniformLocations.eeg_coords, new Float32Array(passedEEGCoords.flat()));
+
+
+        brains.initializeUserBuffers();
+        displacement = brains.userBuffers;
+    } else {
+        channels = newChannels;
+    }
 }

@@ -13,7 +13,6 @@ module.exports.attemptLogin = async (req, res) => {
     let cookie =  getCookie(req,'userId')
     if (cookie === undefined) {
       const id = uuid.v4();
-      console.log('adding userId: ' + id)
       res.cookie('userId',id, { maxAge: 900000, httpOnly: true });
       cookie = id;
     } else {

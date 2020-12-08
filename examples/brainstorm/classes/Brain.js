@@ -4,6 +4,7 @@ let maxSize = 1000
 class Brain {
     constructor(userId) {
     this.id = userId;
+    this.numChannels = 0;
     this.buffer = [[]]
     this.times = []
     }
@@ -12,7 +13,7 @@ class Brain {
     
         let signal = data.signal
         let time = data.time
-    
+            
         signal.forEach((channelData,channel) =>{
     
             if (channel >= this.buffer.length){
@@ -28,6 +29,7 @@ class Brain {
         })
 
         // this.trimBufferByTime()
+        this.numChannels = signal.length
         this.trimBufferBySize()
     }
     

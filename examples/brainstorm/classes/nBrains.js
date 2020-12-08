@@ -16,6 +16,14 @@ class BrainsAtPlay {
             this.users.set(id, brain)
     }
 
+    getMaxChannelNumber(){
+        let chansPerUser = []
+        this.users.forEach((brain) => {
+            chansPerUser.push(brain.numChannels)
+        })
+        return chansPerUser.reduce((acc,curr) => {return (Math.max(acc,curr))})
+    }
+
 
     synchrony(method, edgesArray) {
 

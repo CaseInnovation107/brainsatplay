@@ -41,7 +41,7 @@ class BrainsAtPlayStreamer(object):
     def __str__(self):
         return '{} _ {}'.format(self.id, self.date)
 
-    async def stream(self, url):
+    async def stream(self, url, userId):
 
         # Authenticate
         res = self.session.post(url + '/login')
@@ -51,10 +51,11 @@ class BrainsAtPlayStreamer(object):
         cookieDict = res.cookies.get_dict()
         for cookie in (cookieDict):
             cookies += str(cookie + '=' + cookieDict[cookie] + '; ')
-
+            
             if (cookie == 'userId'):
+                if (userId != None):
+                    cookieDict[cookie] = userId
                 self.id = cookieDict[cookie]
-                print('userId: ' + self.id)
 
         # Add connectionType Cookie
         cookies += str('connectionType=brain; ')

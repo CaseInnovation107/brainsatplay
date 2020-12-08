@@ -55,16 +55,23 @@ function establishWebsocketConnection() {
             $('#messages').append($('<li>').text(obj.msg));
         }
         else if (obj.destination == 'bci'){
-            if (brains != undefined){
+            if (brains.users.get(obj.id) != undefined){
                 brains.users.get(obj.id).streamIntoBuffer(obj.data)
             }
+            updateChannels(brains.getMaxChannelNumber())
+
         } else if (obj.destination == 'init'){
+
+            if (obj.n != 0){
+                brains.users.delete(userId);
+            }
 
             for (newUser = 0; newUser < obj.n; newUser++){
                 if (brains.users.get(obj.ids[newUser]) == undefined && obj.ids[newUser] != undefined){
                     brains.addBrain(obj.ids[newUser])
                 }
             }
+            
             brains.initializeUserBuffers()
         }
         else if (obj.destination == 'BrainsAtPlay'){
@@ -72,12 +79,15 @@ function establishWebsocketConnection() {
             // let reallocationInd;
             update = obj.n;
             if (update == 1){
-                if (obj.id != userId){
+                if ((brains.users.size == 1 && brains.users.keys().next().value == userId)){
+                    brains.users.delete(userId);
+                    brains.addBrain(obj.id)
+                }  else {
                     brains.addBrain(obj.id)
                     reallocationInd = brains.users.size - 1
                 }
+
             } else if (update == -1){
-                
                 // get index of removed id
                 let iter = 0;
                 brains.users.forEach((key) =>{
@@ -89,8 +99,14 @@ function establishWebsocketConnection() {
                 // delete id from map
                 brains.users.delete(obj.id)
             }
+            announceUsers(update)
+
+            // add your own brain back if there are no more left
+            if (brains.users.size == 0){
+                brains.addBrain(userId);
+            }
+
             if (state != 0){
-                announceUsers(update)
                 stateManager(animState)
                 // brains.reallocateUserBuffers(reallocationInd);
             }
