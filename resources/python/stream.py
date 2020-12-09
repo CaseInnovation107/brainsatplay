@@ -16,7 +16,7 @@ async def beginStream(TYPE, PORT, URL, USERID):
 
 async def main():
 
-    TYPE =  'CYTON_DAISY' # 'SYNTHETIC' #'CYTON_DAISY' # 
+    TYPE =  'SYNTHETIC' # 'SYNTHETIC' #'CYTON_DAISY' # 
                             # Streams
                                 # CYTON_DAISY
                                 # SYNTHETIC
@@ -25,11 +25,11 @@ async def main():
                                 # Mac: '/dev/cu.usbserial-DM01N7AE'
                                 # Windows: 'COM4'
                                 # Synthetic: None
-    PORT =     '/dev/cu.usbserial-DM01N7AE' # None #
+    PORT = None # None # /dev/cu.usbserial-DM01N7AE
 
-    URL = 'http://localhost' # 'https://brainsatplay.azurewebsites.net' # 'http://localhost' # 
+    URL = 'https://brainsatplay.azurewebsites.net' # 'https://brainsatplay.azurewebsites.net' # 'http://localhost' # 
 
-    USERID = '004d13f6-a018-4c4f-9c99-2e5d6f920883' # None
+    USERID = None # None
 
     brain = asyncio.create_task(beginStream(TYPE, PORT, URL,USERID))
     await brain

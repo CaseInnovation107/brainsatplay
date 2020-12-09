@@ -10,18 +10,13 @@ module.exports.getSubmissions = async (req, res) => {
 
     client = req.app.get('mongo_client')
     const db = client.db(dbName);
-    var submissionJSON = {};
-
-    console.log(Object.keys(req.body)[0])
-
     let request = Object.keys(req.body)[0]
+    var submissionJSON = {};
+    var docArray = [];
+    await db.collection('submissions').find().forEach(doc => {docArray.push(doc), submissionJSON[doc['game-name']] = doc});
 
     if ("gamename" == request){
-      var submissionJSON = {};
-      var docArray = [];
-    await db.collection('submissions').find({"game-name": req.body.gamename}).forEach(doc => {docArray.push(doc), submissionJSON[doc['game-name']] = doc});
-
-    getSubmissionFiles(docArray,submissionJSON,db).then(output => {
+    getSubmissionFiles(docArray,submissionJSON,db,['game-image', 'additional-images']).then(output => {
       if (Object.keys(output).length === 0){
         res.send({'error':'no results'})
       } else {
@@ -32,29 +27,29 @@ module.exports.getSubmissions = async (req, res) => {
     });
   }
   if ("request" == request){
-    var nameDict = {};
-    console.log('loading existing submission')
 
       if (req.body.request == "all"){
-        await db.collection('submissions').find().forEach(doc => nameDict[doc['team-name']] = doc['game-name']);
 
-        if (Object.keys(nameDict).length != 0){
-          res.send(nameDict)
-        } else {
-          res.send({'error':'no submissions yet'})
-        }
+        getSubmissionFiles(docArray,submissionJSON,db,['game-image']).then(output => {
+          if (Object.keys(output).length === 0){
+            res.send({'error':'no results'})
+          } else {
+            res.send(output)
+          }
+        }).catch(error => {
+          res.send({'error':'error'})
+        });
       }
   }
 
   };
 
-async function getSubmissionFiles(docs, subJSON, db) {
+async function getSubmissionFiles(docs, subJSON, db,fields) {
 
   for (ind in docs){
   const collection = db.collection('photos.files');
   const collectionChunks = db.collection('photos.chunks');
   let game_img;
-  let fields = ['game-image', 'additional-images']
   for (field in fields){
       files = docs[ind][fields[field]]
   for (file in files){
