@@ -25,11 +25,11 @@ async def main():
                                 # Mac: '/dev/cu.usbserial-DM01N7AE'
                                 # Windows: 'COM4'
                                 # Synthetic: None
-    PORT = None # None # /dev/cu.usbserial-DM01N7AE
+    PORT = 'None' # None # /dev/cu.usbserial-DM01N7AE
 
     URL = 'http://localhost' # 'https://brainsatplay.azurewebsites.net' # 'http://localhost' # 
 
-    USERID = 'aed638af-8d93-4824-810e-38200ac16a11' 
+    USERID = None
                     # Options
                         # None
                         # [get your ID from Website UI]

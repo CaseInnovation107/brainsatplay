@@ -256,26 +256,29 @@ wss.on('connection', function (ws, command, request) {
 
     ws.on('close', function () {
 
-      let str = JSON.stringify({
-        n: -app.get(type).get(userId).length,
-        id: userId,
-        destination: 'BrainsAtPlay'
-    });
-
-      if (app.get(type).get(userId).length == 1 || type == 'brains'){
-      app.get(type).delete(userId);
+      if (app.get(type).get(userId).length == 1){
+        app.get(type).delete(userId);
       } else {
         app.get(type).get(userId).splice(mirror_id,1)
       }
     
-      // Broadcast new number of brains to all interfacea
-      app.get('interfaces').forEach(function each(clients, id) {
-        clients.forEach(function allClients(client){
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(str);
-          }
-        })
-      });
+      // Broadcast brains update to all interfacea
+      if (type == 'brains'){
+
+        let str = JSON.stringify({
+          n: -1,
+          id: userId,
+          destination: 'BrainsAtPlay'
+        });
+
+        app.get('interfaces').forEach(function each(clients, id) {
+          clients.forEach(function allClients(client){
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(str);
+            }
+          })
+        });
+    }
     });
 });
 

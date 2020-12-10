@@ -115,7 +115,6 @@ class BrainsAtPlayStreamer(object):
                         print('Unable to reconnect, trying again.')
 
                 await websocket.send(message)
-                time.sleep(1)
 
     async def connect(self, streamType, port=None):
             print('Connecting to board')
