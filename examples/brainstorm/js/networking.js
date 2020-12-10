@@ -20,6 +20,7 @@ function showMessage(res) {
     if (res.userId != undefined){
         document.getElementById('userId').innerHTML = 'Client ID: ' + res.userId
         userId = res.userId;
+        
     } else {
         console.log(`\n${res}`);
     }

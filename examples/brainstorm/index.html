@@ -145,6 +145,8 @@
     let state = 0;
     let prevState = 0;
     let animState = 0;
+    let renderState = state;
+    let renderAnimState = animState;
     let animStart = Date.now();
     let brainVertices;
     let brainMesh;
@@ -223,9 +225,12 @@
     pointCount = brainVertices.length / 3;
     // Start the Process of Establishing a Websocket Connection
     establishWebsocketConnection();
+    
     // // Instantiate a Default Brain
     brains = newBrains('me');
     generate = true;
+    sendSignal(channels)
+
     // Begin Rendering the Visualization
     particleCloud()
 

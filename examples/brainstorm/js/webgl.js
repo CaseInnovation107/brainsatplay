@@ -228,8 +228,7 @@ function particleCloud() {
         // Update 3D brain color with your data
         let user = 0;
         for (let [key] of brains.users) {
-            console.log(key + '==' + userId)
-            if (key == userId){
+            if (key == userId || key == 'me'){
                 for (let channel = 0; channel < eegCoords.length; channel++){
                     if (brains.userBuffers[user].length > channel){
                         avg.push(averagePower(brains.userBuffers[user][channel]));
@@ -280,22 +279,39 @@ function particleCloud() {
 
         // Ease points around
         if (ease){
-
+            let count = 0;
             for (let point =0; point < vertexHome.length/3; point++){
                 for (let ind=0;ind < 3; ind++) {
                         diff = vertexHome[3 * point + ind] - vertexCurr[3 * point + ind]
                         if (Math.abs(diff) <= epsilon) {
                             vertexCurr[3 * point + ind] = vertexHome[3 * point + ind];
+                            count++
                         } else {
                             vertexCurr[3 * point + ind] += ease_array[state][animState] * diff;
                         }
                     }}
             gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexCurr), gl.DYNAMIC_DRAW);
+                    
+            // Change rendering method with some delay if switching to lines
+            if (render_array[state][animState] == gl.LINES){
+                if (count >= vertexHome.length/3 && (renderState != state || animState != renderAnimState)){
+                    renderState = state
+                    renderAnimState = animState
+                }
+            } else if (renderState != state || animState != renderAnimState){
+                renderState = state
+                renderAnimState = animState
+            }
+            
+            if (count == vertexHome.length){
+                ease = false
+            }
+
         }
 
         // Draw
-        gl.drawArrays(render_array[state][animState], 0, vertexCurr.length / 3);
+        gl.drawArrays(render_array[renderState][renderAnimState], 0, vertexCurr.length / 3);
 
         // Update states for next animation loop
         prevState = state;
