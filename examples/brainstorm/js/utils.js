@@ -281,7 +281,7 @@ function sendSignal(channels) {
         signal: signal,
         time: time
     }
-    brains.users.get(userId).streamIntoBuffer(data)
+    brains.users.get("me").streamIntoBuffer(data)
 }
 
 function switchToVoltage(pointCount){
@@ -371,6 +371,11 @@ function stateManager(animState){
         diff_x = 0;
         diff_y = 0;
     }
+
+    // Show Message
+    $('#canvas-message').animate({'opacity': 0}, 400, function(){
+        $(this).html(message_array[state][animState]).animate({'opacity': 1}, 400);
+    });
 }
 
 
@@ -445,4 +450,22 @@ function updateChannels(newChannels) {
     } else {
         channels = newChannels;
     }
+}
+
+
+function bindChatSubmissionEvent(){
+    document.getElementById('chat-form').addEventListener('submit',function(e) {
+        e.preventDefault();
+        if (!ws) {
+            showMessage('No WebSocket connection');
+            return;
+        }
+        ws.send(JSON.stringify({'destination':'chat',
+            'msg': document.getElementById('message').value
+        })
+            );
+            document.getElementById('message').value = '';
+        return false;
+    })
+
 }

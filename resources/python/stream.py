@@ -27,9 +27,12 @@ async def main():
                                 # Synthetic: None
     PORT = None # None # /dev/cu.usbserial-DM01N7AE
 
-    URL = 'https://brainsatplay.azurewebsites.net' # 'https://brainsatplay.azurewebsites.net' # 'http://localhost' # 
+    URL = 'http://localhost' # 'https://brainsatplay.azurewebsites.net' # 'http://localhost' # 
 
-    USERID = None # None
+    USERID = '1bc14c59-db94-4e02-90d7-ebcdc698b02b' 
+                    # Options
+                        # None
+                        # [get your ID from Website UI]
 
     brain = asyncio.create_task(beginStream(TYPE, PORT, URL,USERID))
     await brain

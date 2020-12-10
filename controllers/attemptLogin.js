@@ -13,7 +13,7 @@ module.exports.attemptLogin = async (req, res) => {
     let cookie =  getCookie(req,'userId')
     if (cookie === undefined) {
       const id = uuid.v4();
-      res.cookie('userId',id, { maxAge: 900000, httpOnly: true });
+      res.cookie('userId',id, { maxAge: 30*24*60*60*1000, httpOnly: true });
       cookie = id;
     } else {
       console.log(`Updating session for user ${cookie}`);

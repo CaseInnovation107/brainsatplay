@@ -276,8 +276,8 @@ async function getBrain() {
     for(var i = 0, length = vertices.length; i < length; i++){
         vertices[i] = vertices[i]/75;
         }
-
-    return vertices
+        
+    return brainpoints
 }
 
 

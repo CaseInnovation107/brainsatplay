@@ -101,6 +101,7 @@ class BrainsAtPlay {
 
         let buffer = [];
         let user;
+
         let perUser = Math.floor(pointCount/(this.users.size*channels))
 
         for(user=0; user < this.users.size; user++){

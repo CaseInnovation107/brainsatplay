@@ -49,18 +49,17 @@ class BrainsAtPlayStreamer(object):
         # Convert Cookies into Proper Format
         cookies = ""
         cookieDict = res.cookies.get_dict()
+        
         for cookie in (cookieDict):
-            cookies += str(cookie + '=' + cookieDict[cookie] + '; ')
-            
             if (cookie == 'userId'):
                 if (userId != None):
                     cookieDict[cookie] = userId
                 self.id = cookieDict[cookie]
 
+            cookies += str(cookie + '=' + cookieDict[cookie] + '; ')
+            
         # Add connectionType Cookie
         cookies += str('connectionType=brain; ')
-
-        
         o = urlparse(url)
         if (o.scheme == 'http'):
             uri = "ws://" + o.netloc
@@ -70,7 +69,16 @@ class BrainsAtPlayStreamer(object):
             print('not a valid url scheme')
 
         async with websockets.connect(uri,ping_interval=None, extra_headers=[('cookie', cookies)]) as websocket:
-            print('Starting stream')
+            
+            msg = await websocket.recv()
+
+            try: 
+                msg = json.loads(msg)
+            except:
+                print('\n\nError: ' + msg + '\n\n')
+                return
+
+            print('\n\nStarting to stream into the brainstorm.\n\n')
             self.board.start_stream(num_samples=450000)
             self.start_time = time.time()
             signal.signal(signal.SIGINT, self.signal_handler)
@@ -120,7 +128,7 @@ class BrainsAtPlayStreamer(object):
 
         self.board.release_session()
 
-        sys.exit('Brains-at-play data stream has been stopped.')
+        sys.exit('\n\nBrains-at-play data stream has been stopped.\n\n')
 
 def initialize_board(name='SYNTHETIC',port = None):
     if name == 'SYNTHETIC':

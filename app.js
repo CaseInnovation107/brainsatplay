@@ -159,10 +159,12 @@ server.on('upgrade', function (request, socket, head) {
     }
     let command;
     const type = getCookie(request, 'connectionType') + 's'
-    if (app.get(type).has(userId) == true){
-      command = type
-      console.log('adding mirror of userId: ' + id)
-    } else {
+    if (app.get('interfaces').has(userId) == true && type == 'interfaces') {
+      command = 'interfaces'
+      console.log('adding mirror of userId: ' + userId)
+    } else if (type == 'brains' && app.get('brains').has(userId) == true){
+      command = 'close'
+    }else {
       command = 'init'
     }
     wss.handleUpgrade(request, socket, head, function (ws) {
@@ -176,8 +178,12 @@ wss.on('connection', function (ws, command, request) {
   const type = getCookie(request,'connectionType') + 's'
 
   let mirror_id;
-
-  if (command === 'interfaces' || command === 'brains'){
+  if (command === 'close'){
+    console.log('closing')
+    ws.send('User already has a brain on the network')
+    return
+  }
+  else if (command === 'interfaces' || command === 'brains'){
     mirror_id = app.get(command).get(userId).length
     app.get(command).get(userId).push(ws);
   }
@@ -188,7 +194,7 @@ wss.on('connection', function (ws, command, request) {
     console.log('adding userId: ' + userId + ' to the brainstorm')
   }
 
-    let initStr = JSON.stringify({
+  let initStr = JSON.stringify({
       n: app.get('brains').size,
       ids: Object.keys(Object.fromEntries(app.get('brains'))),
       destination: 'init'
@@ -249,17 +255,18 @@ wss.on('connection', function (ws, command, request) {
     });
 
     ws.on('close', function () {
-      if (app.get(type).get(userId).length == 1){
+
+      let str = JSON.stringify({
+        n: -app.get(type).get(userId).length,
+        id: userId,
+        destination: 'BrainsAtPlay'
+    });
+
+      if (app.get(type).get(userId).length == 1 || type == 'brains'){
       app.get(type).delete(userId);
       } else {
         app.get(type).get(userId).splice(mirror_id,1)
       }
-
-      let str = JSON.stringify({
-        n: -1,
-        id: userId,
-        destination: 'BrainsAtPlay'
-    });
     
       // Broadcast new number of brains to all interfacea
       app.get('interfaces').forEach(function each(clients, id) {

@@ -64,7 +64,7 @@ function establishWebsocketConnection() {
 
             if (obj.n != 0){
                 generate = false;
-                brains.users.delete(userId);
+                brains.users.delete('me');
             }
 
             for (newUser = 0; newUser < obj.n; newUser++){
@@ -80,9 +80,9 @@ function establishWebsocketConnection() {
             // let reallocationInd;
             update = obj.n;
             if (update == 1){
-                if ((brains.users.size == 1 && brains.users.keys().next().value == userId)){
+                if ((brains.users.size == 1 && brains.users.keys().next().value == "me")){
                     generate = false;
-                    brains.users.delete(userId);
+                    brains.users.delete('me');
                     brains.addBrain(obj.id)
                 }  else {
                     brains.addBrain(obj.id)
@@ -105,7 +105,7 @@ function establishWebsocketConnection() {
 
             // add your own brain back if there are no more left
             if (brains.users.size == 0){
-                brains.addBrain(userId);
+                brains.addBrain('me');
                 generate = true;
             }
 
