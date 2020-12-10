@@ -14,9 +14,9 @@ A full-stack framework for developing multiplayer brain-computer interface (BCI)
 ```bash
 npm install
 ``` 
-3. Specify the example you'll run in app.js (optional) 
-```bash
-16 | let example = 'brainstorm'
+3. Specify the example you'll run on Line 16 of app.js (optional) 
+```javascript
+let example = 'brainstorm'
 ``` 
 4. In your command line:
 ```bash
@@ -37,7 +37,7 @@ conda env create -f environment.yml
 conda activate brains-at-play
 ```
 5. In stream.py, specify:
-```bash
+```python
 TYPE =  'SYNTHETIC' 
 # Synthetic Stream: 'SYNTHETIC'
 # OpenBCI Board: 'CYTON_DAISY'
