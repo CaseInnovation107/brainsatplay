@@ -38,21 +38,21 @@ conda activate brains-at-play
 ```
 5. In stream.py, specify:
 ```python
-TYPE =  'SYNTHETIC' 
-# Synthetic Stream: 'SYNTHETIC'
-# OpenBCI Board: 'CYTON_DAISY'
+TYPE = 'SYNTHETIC' 
+  # Synthetic Stream: 'SYNTHETIC'
+  # OpenBCI Board: 'CYTON_DAISY'
 
 PORT = 'None' 
-# Synthetic Stream: None
-# Mac: '/dev/cu.usbserial-________'
-# Windows: 'COM_'
+  # Synthetic Stream: None
+  # Mac: '/dev/cu.usbserial-________'
+  # Windows: 'COM_'
                 
 URL = 'http://localhost'
-# Local: 'http://localhost'
-# Deployed Game: 'https://brainsatplay.azurewebsites.net'
+  # Local: 'http://localhost'
+  # Deployed Game: 'https://brainsatplay.azurewebsites.net'
 
 USERID = None
-# Replace this with the USERID found on the client to view your brain activity
+  # Replace this with the USERID found on the client to view your brain activity there
 ```
 6. Begin streaming:
 ```bash
