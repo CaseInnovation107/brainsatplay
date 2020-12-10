@@ -2,7 +2,6 @@ import sys
 import os
 from BrainsAtPlayStreamer import BrainsAtPlayStreamer 
 import numpy as np
-import pickle
 import asyncio
 
 async def beginStream(TYPE, PORT, URL, USERID):
