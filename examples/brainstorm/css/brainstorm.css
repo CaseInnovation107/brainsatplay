@@ -382,6 +382,7 @@ button i {
     position: absolute;
     display: flex;
     flex-wrap: wrap;
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6));
     top: 0;
     left: 0;
     height: 100%;

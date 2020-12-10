@@ -373,9 +373,14 @@ function stateManager(animState){
     }
 
     // Show Message
+    
+if (message_array[state][animState] != '') {
     $('#canvas-message').animate({'opacity': 0}, 400, function(){
         $(this).html(message_array[state][animState]).animate({'opacity': 1}, 400);
     });
+} else {
+    $('#canvas-message').animate({'opacity': 0}, 400)
+}
 }
 
 
@@ -397,29 +402,17 @@ function announceUsers(diff){
             message = -diff + ' brains left the brainstorm';
         }
     }
-    console.log(message)
-    $('#canvas-message').animate({'opacity': 0}, 800, function(){
-        $(this).html(message).animate({'opacity': 1}, 800, function() {
-        });
-    });
-    $('#canvas-message').animate({'opacity': 1}, 800, function(){
-        $(this).html(message).animate({'opacity': 0}, 800, function() {
-        });
-    });
+    announcement(message)
 }
 
 function announcement(message){
-    console.log(message)
-    $('#canvas-message').animate({'opacity': 0}, 800, function(){
-        $(this).html(message).animate({'opacity': 1}, 800, function() {
-        });
-    });
-    $('#canvas-message').animate({'opacity': 1}, 800, function(){
-        $(this).html(message).animate({'opacity': 0}, 800, function() {
+    $('#canvas-message').animate({'opacity': 0}, 2000, function(){
+        $(this).html(message).animate({'opacity': 1}, 2000, function() {
+            $(this).html(message).animate({'opacity': 0}, 2000, function() {
+            });
         });
     });
 }
-
 
 function updateChannels(newChannels) {
         

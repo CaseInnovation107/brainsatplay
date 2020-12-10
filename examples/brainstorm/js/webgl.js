@@ -9,7 +9,6 @@ function particleCloud() {
         throw new Error('WebGL not supported')
     }
 
-    t = 0;
     stateManager(animState)
 
     animStart = Date.now();
@@ -315,10 +314,7 @@ function particleCloud() {
 
         // Update states for next animation loop
         prevState = state;
-
-        if (shape_array[state][animState] != 'voltage') {
-            t++;
-        }
+        t++;
     };
     animate()
 }
