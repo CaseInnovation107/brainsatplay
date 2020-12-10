@@ -20,8 +20,8 @@ class Brain {
                 this.buffer.push([])
             }
     
-            if (signal != undefined) {
-                if (signal.length > 0) {
+            if (channelData != undefined) {
+                if (channelData.length > 0) {
                     this.buffer[channel].push(...channelData);
                     this.times.push(...time);
                 }

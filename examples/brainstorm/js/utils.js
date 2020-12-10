@@ -23,6 +23,13 @@ function sum(acc,cur){
     return acc + cur
 }
 
+function normalize(min, max) {
+    var delta = max - min;
+    return function (val) {
+        return (val - min) / delta;
+    };
+}
+
 
 function innerLengths(nestedArrays){
     return nestedArrays.map((innerArray) => {
@@ -34,6 +41,12 @@ function innerLengths(nestedArrays){
 function max(arr){
     return arr.reduce((acc,cur) => {
         return Math.max(acc,cur);
+    })
+}
+
+function min(arr){
+    return arr.reduce((acc,cur) => {
+        return Math.min(acc,cur);
     })
 }
 
@@ -256,34 +269,19 @@ function generateSignal(generate, channels){
 }
 
 function sendSignal(channels) {
-    // Generate 1 second of sample data at 512 Hz
-    // Contains 8 μV / 8 Hz and 4 μV / 17 Hz
-
-    let base_freq = document.getElementById("freqRange").value
-    generate_interval = Math.round(samplerate*(1/base_freq))
-
     let signal = new Array(channels);
     for (let channel =0; channel < channels; channel++) {
-        signal[channel] = bci.generateSignal([((INNER_Z/2)/(2*channels))+((channel)*.01)], [base_freq+(channel)], samplerate, 1/base_freq);
+        signal[channel] = bci.generateSignal([1], [base_freq+(channel)], samplerate, (1/base_freq));
     }
     let startTime = Date.now()
-
-    let time = makeArr(startTime,startTime+(1/base_freq),generate_interval)
+    let time = makeArr(startTime,startTime+(1/base_freq),(1/base_freq)*samplerate)
 
     let data = {
         type: 'ts_filtered',
         signal: signal,
         time: time
     }
-    if (!ws) {
-        showMessage('No WebSocket connection');
-        return;
-    } else {
-        ws.send(JSON.stringify({'destination':'bci',
-                'data': data
-            })
-        );
-    }
+    brains.users.get(userId).streamIntoBuffer(data)
 }
 
 function switchToVoltage(pointCount){
@@ -294,8 +292,9 @@ function switchToVoltage(pointCount){
     mat4.translate(viewMatrix, viewMatrix, [0, 0, INITIAL_Z_OFFSET]);
     mat4.invert(viewMatrix, viewMatrix);
 
+    let vertexHome;
     // Create signal dashboard
-    let vertexHome = getVoltages([],pointCount,brains.users.size);
+    vertexHome = getVoltages([],pointCount,brains.users.size);
     let ease = true;
     let rotation = false;
     let zoom = false;
@@ -333,10 +332,8 @@ function stateManager(animState){
 
     if (shape_array[prevState][animState] == 'voltage') {
         brains.initializeUserBuffers();
-        displacement = brains.userBuffers;
-        disp_flat = [...displacement.flat(2)]
         gl.bindBuffer(gl.ARRAY_BUFFER, dispBuffer)
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(disp_flat), gl.DYNAMIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, brains.WebGLBuffer(), gl.DYNAMIC_DRAW);
     }
 
     // set up variables for new state
@@ -352,8 +349,6 @@ function stateManager(animState){
         [vertexHome, viewMatrix, ease, rotation, zoom] = switchToVoltage(pointCount)
 
         brains.initializeUserBuffers();
-        displacement = brains.userBuffers;
-        disp_flat = [...displacement.flat(2)]
         cameraHome = VOLTAGE_Z_OFFSET; 
     }
     else {
@@ -425,7 +420,7 @@ function updateChannels(newChannels) {
         
         if (channels != newChannels) {
             channels = newChannels;
-        SIGNAL_SUSTAIN = Math.round(99/channels)
+        SIGNAL_SUSTAIN = Math.round(SIGNAL_SUSTAIN_ORIGINAL/channels)
 
         if (SIGNAL_SUSTAIN%2 == 0){
             SIGNAL_SUSTAIN += 1;
@@ -447,7 +442,6 @@ function updateChannels(newChannels) {
 
 
         brains.initializeUserBuffers();
-        displacement = brains.userBuffers;
     } else {
         channels = newChannels;
     }

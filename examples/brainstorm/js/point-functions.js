@@ -285,11 +285,12 @@ function getVoltages(pointCloud, pointCount, numUsers) {
 
     let channel_inds = [0];
     let usr_inds = [0];
-    let factor = (pointCount/(2*numUsers*channels))
+    let factor = (pointCount/((VOLTAGE_Z_OFFSET)*numUsers*channels))
     let user = -1;
     let z;
-    let y = -factor/2;
-    let point;
+    let y = -(VOLTAGE_Z_OFFSET/4)*factor;
+    let point1;
+    let point2;
 
     let shift_trigger = Math.floor(pointCount/(2*numUsers*channels));
     let user_trigger = Math.floor(pointCount/(2*numUsers));
@@ -298,23 +299,25 @@ function getVoltages(pointCloud, pointCount, numUsers) {
 
         if (i % shift_trigger == 0) {
                 channel_inds.push(i * 3);
-                z += INNER_Z / (channels);
-                y = -factor / 2;
+                z += 1.5;
+                y = -(VOLTAGE_Z_OFFSET/4)*factor;
         }
 
         if (i % user_trigger == 0){
             if (channels == 1){
-                z = (INNER_Z/2);
+                z = 0;
             } else {
-                z = -(INNER_Z/2) + INNER_Z / (channels);
+                z = -1.5*(channels/2);
             }
-            y = -factor / 2;
+            y = -(VOLTAGE_Z_OFFSET/4)*factor;
             usr_inds.push(i * 3)
             user++;
         }
 
-        point1 = [user*.01, (y) / (factor / 4), z - INNER_Z / (2 * channels)];
-        point2 = [user*.01, ((y+1)) / (factor / 4), z - INNER_Z / (2 * channels)];
+        point1 = [user*.01,                                 // Separate Each User
+                    (y) / (factor / VOLTAGE_Z_OFFSET),  // Length of Voltage Display
+                    z];    // Move to Correct Channel Position
+        point2 = [user*.01, ((y+1)) / (factor / VOLTAGE_Z_OFFSET), z];
         pointCloud.push(...point1);
         pointCloud.push(...point2);
         y++;

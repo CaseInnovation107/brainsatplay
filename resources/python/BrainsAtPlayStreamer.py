@@ -26,7 +26,7 @@ class BrainsAtPlayStreamer(object):
 
         self.id = None
         self.all_channels = True
-        self.channels = [-1,-2,-3,-4,-5,-6,-7,-8] # Ignored
+        self.channels = [-1] # Ignored
         self.date = datetime.datetime.now().strftime("%d-%m-%Y_%I-%M-%S_%p")
         s = requests.Session()
         s.headers['mode'] = 'cors'
@@ -80,21 +80,17 @@ class BrainsAtPlayStreamer(object):
                 # Get Data
                 pass_data = []
                 rate = DataFilter.get_nearest_power_of_two(self.board.rate)
-                data = self.board.get_current_board_data(num_samples=rate)#1)
+                data = self.board.get_board_data()
                 t = data[self.board.time_channel]
 
                 if self.all_channels:
-                    data = data[self.board.eeg_channels] # SCALED
+                    data = data[self.board.eeg_channels] 
                 else:
-                    data = data[self.board.eeg_channels][self.channels] # SCALED
+                    data = data[self.board.eeg_channels][self.channels]
 
                 for entry in data:
-                    DataFilter.perform_highpass(entry, self.board.rate, 3.0, 4, FilterTypes.BUTTERWORTH.value, 0)
-                    pass_data.append((entry/100).tolist())
-
-                # if len(t) > 0:
-                #     t = t - self.start_time
-
+                    pass_data.append((entry).tolist())
+                    
                 message = {
                     'destination': 'bci', 
                 'data': {'signal':pass_data,'time':t.tolist()}

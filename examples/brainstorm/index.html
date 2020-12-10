@@ -183,14 +183,14 @@
     let uniformLocations;
 
     // WebGL Variables
+    let channels = 16;
     let DESIRED_POINTS = 1e5/2; // 80000
-    let SIGNAL_SUSTAIN = 150;
-    let signal_sustain;
+    let SIGNAL_SUSTAIN_ORIGINAL = 100;
+    let SIGNAL_SUSTAIN = Math.round(SIGNAL_SUSTAIN_ORIGINAL/channels);
     let pointCount;
     let INITIAL_Z_OFFSET = 1.7;
-    let VOLTAGE_Z_OFFSET = 1.7;
+    let VOLTAGE_Z_OFFSET = 10.0;
     let AUTO_ROTATION_X = 0.0; //0.2;
-    let INNER_Z = 2*VOLTAGE_Z_OFFSET;
 
     let color;
     let displacement = [];
@@ -214,10 +214,11 @@
     let zoom = true;
 
     // Signal Generation Variables
-    let channels = 1;
-    let generate = false;
-    let samplerate = 125; // This is almost definitely wrong
-    let generate_interval; // updated when generate is true
+    // let channels = 1;
+    let generate;
+    let base_freq = 1;
+    let samplerate = 125;
+    generate_interval = Math.round(samplerate*(1/base_freq))
     let count = 0;
 
     // EEG Coordinates
@@ -298,6 +299,7 @@
                 pointCount = brainVertices.length / 3;
                 establishWebsocketConnection();
                 brains = newBrains(userId);
+                generate = true;
                 particleBrain()
         }
         )

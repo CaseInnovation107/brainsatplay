@@ -165,7 +165,28 @@ class BrainsAtPlay {
             userInd++;
         })
     }
+
+    WebGLBuffer(){
+        return new Float32Array([...this.userBuffers.flat(2)])
+    }
+
+    WebGLVoltageDisplacementBuffer(){
+        let _temp = this.normalizeUserBuffers();
+        return new Float32Array([..._temp.flat(2)])
+    }
+
+    normalizeUserBuffers() {
+        let _temp = this.userBuffers.map((userData) => {
+            return userData.map((channelData) => {
+                let chanMax = max(channelData)
+                let chanMin = min(channelData)
+                return channelData.map(normalize(chanMin,chanMax))
+                })
+        })
+        return _temp
+    }
 }
+
 
 function newBrains(data){
     let newObj = new BrainsAtPlay(data)

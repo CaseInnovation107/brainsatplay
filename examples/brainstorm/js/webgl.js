@@ -23,11 +23,6 @@ function particleBrain() {
     vertexCurr = vertexHome;
     vertexVel = new Array(pointCount*3).fill(0.0);
 
-    // displacement = resetDisplacement();
-    displacement = brains.userBuffers;
-    disp_flat = [...displacement.flat(2)]
-
-
 // create vertex shader
     const vertexShader = gl.createShader(gl.VERTEX_SHADER)
     gl.shaderSource(vertexShader, `
@@ -217,7 +212,7 @@ void main() {
     const dispLocation = gl.getAttribLocation(program, `z_displacement`);
     gl.enableVertexAttribArray(dispLocation);
     gl.bindBuffer(gl.ARRAY_BUFFER, dispBuffer)
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(disp_flat), gl.DYNAMIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, brains.WebGLBuffer(), gl.DYNAMIC_DRAW);
     gl.vertexAttribPointer(dispLocation, 1, gl.FLOAT, false, 0, 0);
 
 // draw
@@ -423,16 +418,12 @@ void main() {
 
 
         // Append voltage stream to array
-        // displacement = updateDisplacement(displacement,signal, 0) // Update your signal
-        // displacement = updateDisplacement(displacement,other_signal,1)// Update the signal of others
         brains.updateUserBuffers()
-        displacement = brains.userBuffers;
-        disp_flat = [...displacement.flat(2)]
 
         // Push voltage stream to displacement buffer
         if (shape_array[state][animState] == 'voltage') {
             gl.bindBuffer(gl.ARRAY_BUFFER, dispBuffer)
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(disp_flat), gl.DYNAMIC_DRAW);
+            gl.bufferData(gl.ARRAY_BUFFER, brains.WebGLVoltageDisplacementBuffer(), gl.DYNAMIC_DRAW);
         } 
         // Update rotation speeds
         moveStatus = false;
@@ -500,8 +491,8 @@ void main() {
 
         // Update 3D brain color with your data
         for (let channel = 0; channel < eegCoords.length; channel++){
-            if (displacement[0].length > channel){
-            avg.push(averagePower(displacement[0][channel]));
+            if (brains.userBuffers[0].length > channel){
+            avg.push(averagePower(brains.userBuffers[0][channel]));
             } else {
                 avg.push(0);
             }
