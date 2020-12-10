@@ -441,7 +441,7 @@ void main() {
         }
 
         // Get synchrony
-        if (shape_array[state][animState] == 'brain' && t > 100) {
+        if (effect_array[state][animState] == 'synchrony') {
             // Synchrony of you and other users
 
             if (brains.users.size > 1){
@@ -464,6 +464,9 @@ void main() {
             synchrony.shift()
             synchrony.push(0)
         }
+    } else {
+        synchrony.shift()
+        synchrony.push(0)
     }
 
         // Modify View Matrix
@@ -484,7 +487,11 @@ void main() {
         gl.uniform1f(uniformLocations.noiseCoeff,distortion/5);
         gl.uniform1f(uniformLocations.distortion, distortion/100);
         gl.uniform1f(uniformLocations.u_time, t/200);
+        if (effect_array[state][animState] == 'synchrony') {
         gl.uniform1f(uniformLocations.synchrony, average(synchrony));
+        } else {
+            gl.uniform1f(uniformLocations.synchrony, 0.0);
+        }
         gl.uniform1f(uniformLocations.aspect, window.innerWidth/window.innerHeight);
 
         let avg = [];
