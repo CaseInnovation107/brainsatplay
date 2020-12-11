@@ -26,9 +26,9 @@ async def main():
                                 # Synthetic: None
     PORT = 'None' # None # /dev/cu.usbserial-DM01N7AE
 
-    URL = 'http://localhost' # 'https://brainsatplay.azurewebsites.net' # 'http://localhost' # 
+    URL = 'https://brainsatplay.azurewebsites.net' # 'http://localhost' # 'https://brainsatplay.azurewebsites.net'
 
-    USERID = None
+    USERID = '63a38269-ebd9-47b2-9fa8-0683bb7a113a'
                     # Options
                         # None
                         # [get your ID from Website UI]

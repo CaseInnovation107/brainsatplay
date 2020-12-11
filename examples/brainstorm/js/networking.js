@@ -20,23 +20,24 @@ function showMessage(res) {
     if (res.userId != undefined){
         document.getElementById('userId').innerHTML = 'Client ID: ' + res.userId
         userId = res.userId;
-        
+        initializeWebsocket();
     } else {
         console.log(`\n${res}`);
     }
 }
 
 // Websockets
-function establishWebsocketConnection() {
+
+function initializeWebsocket(){
     if (ws) {
         ws.onerror = ws.onopen = ws.onclose = null;
         ws.close();
     }
 
     if (url.protocol == 'http:'){
-    ws = new WebSocket(`ws://` + url.hostname);
+    ws = new WebSocket(`ws://` + url.hostname,[userId, 'interfaces']);
     } else if (url.protocol == 'https:'){
-        ws = new WebSocket(`wss://` + url.hostname);
+        ws = new WebSocket(`wss://` + url.hostname,[userId, 'interfaces']);
     } else{
         console.log('invalid protocol')
         return
@@ -127,6 +128,15 @@ function establishWebsocketConnection() {
         // document.getElementById('app').innerHTML = 'Websocket closed'
         ws = null;
     };
+}
+
+function establishWebsocketConnection() {
+
+    // Declare What Type of Brains@Play User You Are
+    setCookie('connectionType','interfaces', 30)
+
+    // Validate Yourself or Be Assigned a UserID
+    clientAction('login','POST'); // THIS CALLS ANOTHER FUNCTION IN showMessage()
 }
 
 

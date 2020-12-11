@@ -87,7 +87,7 @@
 <script>
 
     // Set Deployment Controls
-    let option = 'local';
+    let option = 'server';
 
     // Initialize WebGL Canvas
     let canvas = document.getElementById('webgl');
@@ -207,12 +207,6 @@
     canvas.onwheel = wheelMove
     document.onkeydown = keyboardShortcuts
     bindChatSubmissionEvent()
-
-    // Declare What Type of Brains@Play User You Are
-    setCookie('connectionType','interface', 30)
-
-    // Validate Yourself or Be Assigned a UserID
-    clientAction('login','POST');
 
     // Reduce Point Count
     brainVertices = reducePointCount(brainpoints, DESIRED_POINTS);

@@ -51,23 +51,6 @@ MongoClient.connect(uri, { useUnifiedTopology: true })
     collectionChunks = client.db("brains-and-games").collection('photos.chunks');
   })
 
-// Cookies
-const store = new MongoDBStore({
-  uri: uri,
-  collection: 'sessions'
-});
-
-let sessionParser = session({
-  secret: 'secret string',
-  resave: true,
-  saveUninitialized: true,
-  store: store, /* store session data in mongodb */
-  cookie: { 
-    secure: false ,
-    sameSite: false ,
-    maxAge: 1000 * 60 * 60 * 24 * 7}
-})
-
 // Set Usage of Libraries
 app.use(logger('dev'));
 app.use(cookieParser())
@@ -78,21 +61,16 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(function(req, res, next) {
   const validOrigins = [
     `http://localhost`,
+    'http://localhost:63342',
     'https://brainsatplay.azurewebsites.net',
     'http://brainsatplay.azurewebsites.net',
-    'https://brainsatplay.com',
-    // '*',
-    'http://97.90.237.21',
-    'http://97.90.237.21:63342'
+    'https://brainsatplay.com'
   ];
   const origin = req.headers.origin;
 
   if (validOrigins.includes(origin)) {
-    // console.log('valid origin: ' + origin)
     res.setHeader('Access-Control-Allow-Origin', origin);
-  } else {
-    // console.log('invalid origin: ' + origin)
-  }
+  } 
 
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   res.header("Access-Control-Allow-Methods",
@@ -134,11 +112,7 @@ let server = http.createServer(app);
 
 // Websocket
 let wss;
-// if (webSocketType == 'serverless'){
 wss = new WebSocket.Server({ clientTracking: false, noServer: true });
-// } else{
-// wss = new WebSocket.Server( {server:server});
-// }
 
 function getCookie(req,name) {
   const value = `; ${req.headers.cookie}`;
@@ -149,19 +123,30 @@ function getCookie(req,name) {
 //Authentication
 server.on('upgrade', function (request, socket, head) {
   console.log('Parsing session from request...');
+    let userId;
+    let type;
 
-    const userId =  getCookie(request,'userId')
+    if (getCookie(request, 'userId') != undefined) {
+      userId =  getCookie(request, 'userId')
+      type = getCookie(request, 'connectionType')
+    } else{
+      let protocols = request.headers['sec-websocket-protocol'].split(', ')
+      userId =  protocols[0]
+      type = protocols[1]
+    }
+
 
     if (!userId) {
+      console.log('no userId')
       socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
       socket.destroy();
       return;
     }
+
     let command;
-    const type = getCookie(request, 'connectionType') + 's'
+
     if (app.get('interfaces').has(userId) == true && type == 'interfaces') {
       command = 'interfaces'
-      console.log('adding mirror of userId: ' + userId)
     } else if (type == 'brains' && app.get('brains').has(userId) == true){
       command = 'close'
     }else {
@@ -173,9 +158,17 @@ server.on('upgrade', function (request, socket, head) {
 });
 
 wss.on('connection', function (ws, command, request) {
+  let userId;
+  let type;
 
-  const userId =  getCookie(request,'userId')
-  const type = getCookie(request,'connectionType') + 's'
+    if (getCookie(request, 'userId') != undefined) {
+      userId =  getCookie(request, 'userId')
+      type = getCookie(request, 'connectionType')
+    } else{
+      let protocols = request.headers['sec-websocket-protocol'].split(', ')
+      userId =  protocols[0]
+      type = protocols[1]
+    }
 
   let mirror_id;
   if (command === 'close'){
