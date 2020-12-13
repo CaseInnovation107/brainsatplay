@@ -164,10 +164,12 @@ wss.on('connection', function (ws, command, request) {
     if (getCookie(request, 'userId') != undefined) {
       userId =  getCookie(request, 'userId')
       type = getCookie(request, 'connectionType')
-    } else{
+    } else if (request.headers['sec-websocket-protocol'] != undefined) {
       let protocols = request.headers['sec-websocket-protocol'].split(', ')
       userId =  protocols[0]
       type = protocols[1]
+    } else {
+      ws.send('No userID Cookie (Python) or Protocol (JavaScript) specified')
     }
 
   let mirror_id;

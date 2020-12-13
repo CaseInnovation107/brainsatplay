@@ -15,7 +15,7 @@ async def beginStream(TYPE, PORT, URL, USERID):
 
 async def main():
 
-    TYPE =  'SYNTHETIC' # 'SYNTHETIC' #'CYTON_DAISY' # 
+    TYPE =  'CYTON_DAISY' # 'SYNTHETIC' #'CYTON_DAISY' # 
                             # Streams
                                 # CYTON_DAISY
                                 # SYNTHETIC
@@ -24,11 +24,11 @@ async def main():
                                 # Mac: '/dev/cu.usbserial-DM01N7AE'
                                 # Windows: 'COM4'
                                 # Synthetic: None
-    PORT = 'None' # None # /dev/cu.usbserial-DM01N7AE
+    PORT = '/dev/cu.usbserial-DM01N7AE' # None # /dev/cu.usbserial-DM01N7AE
 
-    URL = 'https://brainsatplay.azurewebsites.net' # 'http://localhost' # 'https://brainsatplay.azurewebsites.net'
+    URL = 'http://localhost' # 'https://brainsatplay.azurewebsites.net' # 'http://localhost' # 'https://brainsatplay.azurewebsites.net'
 
-    USERID = '63a38269-ebd9-47b2-9fa8-0683bb7a113a'
+    USERID = '205c159c-04aa-439c-8c44-51587fc3a188'; # 'f51ff9e3-621a-4df2-81e7-79ee7872316e'
                     # Options
                         # None
                         # [get your ID from Website UI]

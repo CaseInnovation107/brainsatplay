@@ -1,8 +1,3 @@
-// The models in this code are by Anderson Winkler and are
-// licensed under a Creative Commons Attribution-ShareAlike 3.0
-// Unported License. The original work can be found at
-// https://brainder.org/brain-for-blender.
-
 function particleCloud() {
 
     if (!gl) {
@@ -13,7 +8,6 @@ function particleCloud() {
 
     animStart = Date.now();
     vertexCurr = vertexHome;
-    vertexVel = new Array(pointCount*3).fill(0.0);
 
 // Create Shaders
     const vertexShader = gl.createShader(gl.VERTEX_SHADER)
@@ -58,7 +52,8 @@ function particleCloud() {
         noiseCoeff: gl.getUniformLocation(program, `u_noiseCoeff`),
         synchrony: gl.getUniformLocation(program, `synchrony`),
         eeg_coords: gl.getUniformLocation(program,`eeg_coords`),
-        eeg_power: gl.getUniformLocation(program,`eeg_power`)
+        eeg_power: gl.getUniformLocation(program,`eeg_power`),
+        ambientNoiseToggle: gl.getUniformLocation(program,'u_ambientNoiseToggle')
     };
 
     // only pass EEG coordinates for existing channels
@@ -73,6 +68,7 @@ function particleCloud() {
     // initialize uniforms that don't change on every draw loop
     gl.uniform3fv(uniformLocations.eeg_coords, new Float32Array(passedEEGCoords.flat()));
     gl.uniform1i(uniformLocations.effect, effects.indexOf(effect_array[state][animState]));
+    gl.uniform1i(uniformLocations.ambientNoiseToggle, 1);
 
 
 // Create Model, View, and ProjectionMatrices
@@ -215,13 +211,9 @@ function particleCloud() {
         gl.uniform1f(uniformLocations.noiseCoeff,distortion/5);
         gl.uniform1f(uniformLocations.distortion, distortion/100);
         gl.uniform1f(uniformLocations.u_time, t/200);
-        if (effect_array[state][animState] == 'synchrony') {
         gl.uniform1f(uniformLocations.synchrony, average(synchrony));
-        } else {
-            gl.uniform1f(uniformLocations.synchrony, average(synchrony));
-        }
-        gl.uniform1f(uniformLocations.aspect, window.innerWidth/window.innerHeight);
 
+        
         let avg = [];
 
         // Update 3D brain color with your data
@@ -289,6 +281,15 @@ function particleCloud() {
                             vertexCurr[3 * point + ind] += ease_array[state][animState] * diff;
                         }
                     }}
+
+            // let constructedBrain = vertexCurr.map((val,ind) => {
+            //     // if (ind < t*10000){
+            //         return val/100
+            //     // } else {
+            //     //     return 0
+            //     // }
+            // })
+
             gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexCurr), gl.DYNAMIC_DRAW);
                     

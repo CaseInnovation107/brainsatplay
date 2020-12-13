@@ -34,7 +34,7 @@ conda env create -f environment.yml
 ```
 4. Activate the environment:
 ```bash
-conda activate brains-at-play
+conda activate brainsatplay
 ```
 5. In stream.py, specify:
 ```python

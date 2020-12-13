@@ -41,10 +41,10 @@ class BrainsAtPlayStreamer(object):
     async def stream(self, url, userId):
 
         # Authenticate
-        res = self.session.post(url + '/login',cookies=cookieDict)
+        res = self.session.post(url + '/login')
 
         cookieDict = res.cookies.get_dict()
-        cookieDict.connectionType = 'brains'
+        cookieDict['connectionType'] = 'brains'
         
 
         # Convert Cookies into Proper Format
