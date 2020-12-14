@@ -476,3 +476,43 @@ function bindChatSubmissionEvent(){
     })
 
 }
+
+
+
+function toggleDevTools(){
+    devTools = !devTools; 
+    
+    if (devTools){
+        document.getElementById('developer-tools').style.left = '0'
+        canvas.width = window.innerWidth - 200
+    } else {
+        document.getElementById('developer-tools').style.left = '-200px'
+        canvas.width = window.innerWidth
+    }
+    document.getElementById('canvas-message').style.width = `${canvas.width}px`;
+}
+
+window.onresize = function() {
+    canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth;
+
+    if (devTools){
+        canvas.width -= 200;
+    }
+    document.getElementById('canvas-message').style.width = `${canvas.width}px`;
+}
+
+function resize(canvas) {
+    // Lookup the size the browser is displaying the canvas.
+    var displayWidth  = canvas.clientWidth;
+    var displayHeight = canvas.clientHeight;
+   
+    // Check if the canvas is not the same size.
+    if (canvas.width  != displayWidth ||
+        canvas.height != displayHeight) {
+   
+      // Make the canvas the same size
+      canvas.width  = displayWidth;
+      canvas.height = displayHeight;
+    }
+  }

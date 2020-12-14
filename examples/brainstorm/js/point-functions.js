@@ -108,7 +108,7 @@ function createPointCloud(pointFunction, pointCount) {
                 for (let i = 0; i < pointCount; i++) {
                 const r = () => (Math.random() - 0.5);
                 const point = shapes[pointFunction](r(), r(), r());
-                pointCloud.push(...point.map((val) => {return val*zoom_array[state][animState]/2}));
+                pointCloud.push(...point.map((val) => {return val*zoom_array[state][animState]/1.5}));
             }
         }
         

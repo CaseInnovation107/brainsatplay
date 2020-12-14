@@ -20,6 +20,7 @@ uniform float u_time;
 uniform int u_ambientNoiseToggle;
 uniform vec3 eeg_coords[16];
 uniform float eeg_power[16];
+uniform vec2 aspectChange;
 
 float sync_scaling = 0.5+((0.5*synchrony)*0.5); 
 
@@ -148,8 +149,16 @@ void main() {
      } 
 
      positionProjected = matrix * vec4((x+distortion_noise.x+ambient_noise.x),(y+distortion_noise.y+ambient_noise.y),(z+distortion_noise.z+z_displacement+ambient_noise.z),1) * vec4(sync_scaling,sync_scaling,sync_scaling,1.0);
+    //  currentScreen = positionProjected.xy / positionProjected.w;
+    positionProjected.x /= aspectChange.x;
+    positionProjected.y /= aspectChange.y;
 
-     
+    if (aspectChange.x > 1.0 || aspectChange.y > 1.0){
+        positionProjected.xy *= min(aspectChange.x,aspectChange.y);
+    } else if (aspectChange.x < 1.0 || aspectChange.y < 1.0){
+        positionProjected.xy *= min(aspectChange.x,aspectChange.y);
+    }
+
     gl_Position = positionProjected;
     gl_PointSize = 1.0;
 }`

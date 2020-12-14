@@ -53,7 +53,8 @@ function particleCloud() {
         synchrony: gl.getUniformLocation(program, `synchrony`),
         eeg_coords: gl.getUniformLocation(program,`eeg_coords`),
         eeg_power: gl.getUniformLocation(program,`eeg_power`),
-        ambientNoiseToggle: gl.getUniformLocation(program,'u_ambientNoiseToggle')
+        ambientNoiseToggle: gl.getUniformLocation(program,'u_ambientNoiseToggle'),
+        aspectChange: gl.getUniformLocation(program,'aspectChange'),
     };
 
     // only pass EEG coordinates for existing channels
@@ -79,13 +80,17 @@ function particleCloud() {
     mat4.rotateY(viewMatrix, viewMatrix, Math.PI / 2);
     mat4.translate(viewMatrix, viewMatrix, [0, 0, cameraCurr]);
     mat4.invert(viewMatrix, viewMatrix);
-    let projectionMatrix = mat4.create();
+    originalAspectX = canvas.width
+    originalAspectY = canvas.height
+
+    projectionMatrix = mat4.create();
     mat4.perspective(projectionMatrix,
         75 * Math.PI / 180, // vertical field-of-view (angle, radians)
-        canvas.width / canvas.height, // aspect W/H
+        originalAspectX/originalAspectY, // aspect W/H
         1e-4, // near cull distance
         1e4, // far cull distance
     );
+
     const mvMatrix = mat4.create();
     const mvpMatrix = mat4.create();
 
@@ -94,6 +99,8 @@ function particleCloud() {
 
     function animate() {
         requestAnimationFrame(animate)
+        resize(gl.canvas);
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         mouseState()
 
 
@@ -200,7 +207,6 @@ function particleCloud() {
         mat4.rotateX(viewMatrix, viewMatrix, -diff_y*2*Math.PI/canvas.width);
         mat4.translate(viewMatrix, viewMatrix, [0, 0, cameraCurr]);
         mat4.invert(viewMatrix, viewMatrix);
-        // mat4.rotateZ(viewMatrix, viewMatrix, -0.01);
 
         // Create container matrix for WebGL
         mat4.multiply(mvMatrix, viewMatrix, modelMatrix)
@@ -212,7 +218,7 @@ function particleCloud() {
         gl.uniform1f(uniformLocations.distortion, distortion/100);
         gl.uniform1f(uniformLocations.u_time, t/200);
         gl.uniform1f(uniformLocations.synchrony, average(synchrony));
-
+        gl.uniform2fv(uniformLocations.aspectChange, [(canvas.width)/(originalAspectX),(canvas.height)/(originalAspectY)]);
         
         let avg = [];
 
