@@ -90,120 +90,6 @@ function makeArr(startValue, stopValue, cardinality) {
     return arr;
   }
 
-
-function closeTutorial() {
-    setTimeout(() => {
-        document.getElementById("tutorial").style.opacity = '0';
-        document.getElementById("tutorial").style.pointerEvents = 'none';
-    }, this.animationDelay + 10);
-}
-
-function openTutorial(){
-    setTimeout(() => {
-        document.getElementById("tutorial").style.opacity = '.9';
-        document.getElementById("tutorial").style.pointerEvents = 'auto';
-    }, this.animationDelay + 10);
-}
-
-//
-// Synchrony Calculation
-// Source: http://stevegardner.net/2012/06/11/javascript-code-to-calculate-the-pearson-correlation-coefficient/
-//
-
-function getPearsonCorrelation(x, y) {
-    var shortestArrayLength = 0;
-
-    if (x.length == y.length) {
-        shortestArrayLength = x.length;
-    } else if (x.length > y.length) {
-        shortestArrayLength = y.length;
-        // console.error('x has more items in it, the last ' + (x.length - shortestArrayLength) + ' item(s) will be ignored');
-    } else {
-        shortestArrayLength = x.length;
-        // console.error('y has more items in it, the last ' + (y.length - shortestArrayLength) + ' item(s) will be ignored');
-    }
-
-    var xy = [];
-    var x2 = [];
-    var y2 = [];
-
-    for (var i = 0; i < shortestArrayLength; i++) {
-        xy.push(x[i] * y[i]);
-        x2.push(x[i] * x[i]);
-        y2.push(y[i] * y[i]);
-    }
-
-    var sum_x = 0;
-    var sum_y = 0;
-    var sum_xy = 0;
-    var sum_x2 = 0;
-    var sum_y2 = 0;
-
-    for (var i = 0; i < shortestArrayLength; i++) {
-        sum_x += x[i];
-        sum_y += y[i];
-        sum_xy += xy[i];
-        sum_x2 += x2[i];
-        sum_y2 += y2[i];
-    }
-
-    var step1 = (shortestArrayLength * sum_xy) - (sum_x * sum_y);
-    var step2 = (shortestArrayLength * sum_x2) - (sum_x * sum_x);
-    var step3 = (shortestArrayLength * sum_y2) - (sum_y * sum_y);
-    var step4 = Math.sqrt(step2 * step3);
-    var answer = step1 / step4;
-
-    return answer;
-}
-
-
-//
-// Two Way Data Binding
-//
-
-var elements = document.querySelectorAll('[data-tw-bind]'),
-    scope = {};
-elements.forEach(function(element) {
-    //execute scope setter
-    if(element.type === 'text'|| element.type === 'textarea' || element.type === 'range'){
-        var propToBind = element.getAttribute('data-tw-bind');
-        addScopeProp(propToBind);
-        element.oninput = function(){
-            scope[propToBind] = element.value;
-        }
-
-        //bind prop to elements
-        function addScopeProp(prop){
-            //add property if needed
-            if(!scope.hasOwnProperty(prop)){
-                //value to populate with newvalue
-                var value;
-                Object.defineProperty(scope, prop, {
-                    set: function (newValue) {
-                        value = newValue;
-                        elements.forEach(function(element){
-                            //change value to binded elements
-                            if(element.getAttribute('data-tw-bind') === prop){
-                                if(element.type && (element.type === 'text' ||
-                                    element.type === 'textarea'||
-                                    element.type === 'range')){
-                                    element.value = newValue;
-                                }
-                                else if(!element.type){
-                                    element.innerHTML = newValue;
-                                }
-                            }
-                        });
-                    },
-                    get: function(){
-                        return value;
-                    },
-                    enumerable: true
-                });
-            }
-        }
-    }});
-
     // Plot Bands
     // let power;
     // let label;
@@ -229,52 +115,22 @@ elements.forEach(function(element) {
     //     p5.rect(band * (p5.width / (band_names.length)), p5.height / 2, (band + 1) * (p5.width / (band_names.length)), power)
     // }
 
-
-function resetDisplacement(){
-    let displacement = [];
-    let user;
-    let perUser = Math.floor(pointCount/(brains.users.size*channels))
-    for(user=0; user < brains.users.size; user++){
-        displacement.push(new Array())
-        for(let chan=0; chan < channels; chan++){
-            displacement[user].push(new Array(perUser).fill(0.0));
-        }
-    }
-
-    let remainder = pointCount - channels*brains.users.size*perUser
-        for (let chan = 0; chan < channels; chan++) {
-            for (user = 0; user < brains.users.size; user++)
-                if (remainder > 0) {
-                    remainder--;
-                    displacement[user][chan].push(0.0)
-                }
-        }
-
-    return displacement
-}
-
 function generateSignal(generate, channels){
     generate = !generate;
     sendSignal(channels);
-
-    if ( generate ){
-        document.getElementById('auto-generate').innerHTML = "<i class=\"fas fa-pause-circle fa-2x\"></i>\n" +
-            "<p>Stop Autoplay</p>"
-    } else {
-        document.getElementById('auto-generate').innerHTML = "<i class=\"fas fa-play-circle fa-2x\"></i>\n" +
-            "<p>Autoplay Signal</p>"
-    }
-
     return generate
 }
 
 function sendSignal(channels) {
 
-    for (let user = 0; user < 2; user++){
+
+    brains.users.forEach((user) => {
         let signal = new Array(channels);
+        // let amp = Math.random()
         for (let channel =0; channel < channels; channel++) {
-            signal[channel] = bci.generateSignal([Math.random()], [base_freq+(channel)], samplerate, (1/base_freq));
+            signal[channel] = bci.generateSignal([Math.random()], [base_freq+Math.random()*40], samplerate, (1/base_freq));
         }
+
         let startTime = Date.now()
         let time = makeArr(startTime,startTime+(1/base_freq),(1/base_freq)*samplerate)
 
@@ -283,19 +139,15 @@ function sendSignal(channels) {
             signal: signal,
             time: time
         }
-        if (user == 0) {
-        brains.users.get("me").streamIntoBuffer(data)
-        } else {        
-            brains.users.get("other").streamIntoBuffer(data)
-        }
 
-}
+            user.streamIntoBuffer(data)
+        })
 }
 
-function switchToVoltage(pointCount){
+function switchToChannels(pointCount){
     // Reset View Matrix
     viewMatrix = mat4.create();
-    cameraHome = zoom_array[state][animState];
+    cameraHome = visualizations[state].zoom;
     mat4.rotateX(viewMatrix, viewMatrix, Math.PI / 2);
     mat4.rotateY(viewMatrix, viewMatrix, Math.PI / 2);
     mat4.translate(viewMatrix, viewMatrix, [0, 0, cameraCurr]);
@@ -303,7 +155,7 @@ function switchToVoltage(pointCount){
 
     let vertexHome;
     // Create signal dashboard
-    vertexHome = getVoltages([],pointCount,brains.users.size);
+    vertexHome = getChannels([],pointCount,brains.users.size);
     let ease = true;
     let rotation = false;
     let zoom = false;
@@ -323,7 +175,7 @@ function distortToggle(){
     }
 
     if (!distort) {
-        distortIter =+ ease_array[state][animState] * (-distortion);
+        distortIter =+ visualizations[state].ease * (-distortion);
     }
 
     if ( distort ){
@@ -336,26 +188,26 @@ function distortToggle(){
 }
 
 
-function stateManager(animState){
-    // reset displacement if leaving voltage visualization
+function stateManager(){
+    // reset displacement if leaving channels visualization
 
-    if (shape_array[prevState][animState] == 'voltage') {
+    if (visualizations[prevState].shapes.includes('channels')) {
         brains.initializeUserBuffers();
         gl.bindBuffer(gl.ARRAY_BUFFER, dispBuffer)
-        gl.bufferData(gl.ARRAY_BUFFER, brains.WebGLBuffer(), gl.DYNAMIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, brains.WebGLChannelDisplacementBuffer(), gl.DYNAMIC_DRAW);
     }
 
     // set up variables for new state
-    if (shape_array[state][animState] == 'brain'){
+    if (visualizations[state].shapes.includes('brain')){
         vertexHome = [...brainVertices];
         ease = true;
         rotation = true;
         zoom = true;
     } 
 
-    if (shape_array[state][animState] == 'voltage'){
-        cameraHome = zoom_array[state][animState];
-        [vertexHome, viewMatrix, ease, rotation, zoom] = switchToVoltage(pointCount)
+    if (visualizations[state].shapes.includes('channels')){
+        cameraHome = visualizations[state].zoom;
+        [vertexHome, viewMatrix, ease, rotation, zoom] = switchToChannels(pointCount)
 
         brains.initializeUserBuffers();
         if (uniformLocations != undefined){
@@ -364,7 +216,7 @@ function stateManager(animState){
     }
     else {
         viewMatrix = mat4.create();
-        cameraHome = zoom_array[state][animState];
+        cameraHome = visualizations[state].zoom;
         mat4.rotateX(viewMatrix, viewMatrix, Math.PI / 2);
         mat4.rotateY(viewMatrix, viewMatrix, Math.PI / 2);
         mat4.translate(viewMatrix, viewMatrix, [0, 0, cameraCurr]);
@@ -374,8 +226,8 @@ function stateManager(animState){
         }
     }
 
-    if (shape_array[state][animState] != 'brain' && shape_array[state][animState] != 'voltage'){
-        vertexHome = createPointCloud(shape_array[state][animState], pointCount);
+    if (!visualizations[state].shapes.includes('brain') && !visualizations[state].shapes.includes('channels')){
+        vertexHome = createPointCloud(visualizations[state].shapes, pointCount);
         ease = true;
         rotation = false;
         zoom = false;
@@ -387,14 +239,15 @@ function stateManager(animState){
     }
 
     // Show Message
-    
-if (message_array[state][animState] != '') {
-    $('#canvas-message').animate({'opacity': 0}, 400, function(){
-        $(this).html(message_array[state][animState]).animate({'opacity': 1}, 400);
-    });
-} else {
-    $('#canvas-message').animate({'opacity': 0}, 400)
-}
+    document.getElementById('state').innerHTML = `${visualizations[state].name}`
+    document.getElementById('signal-type').innerHTML = `${visualizations[state].signaltype}`
+
+    if (visualizations[state].message != '') {
+        document.getElementById('canvas-message').innerHTML = visualizations[state].message;
+        document.getElementById('canvas-message').style.opacity = 1;
+    } else if (document.getElementById('canvas-message').style.opacity != 0) {
+        document.getElementById('canvas-message').style.opacity = 0;
+    }
 }
 
 
@@ -416,16 +269,14 @@ function announceUsers(diff){
             message = -diff + ' brains left the brainstorm';
         }
     }
+    console.log(message)
     announcement(message)
 }
 
 function announcement(message){
-    $('#canvas-message').animate({'opacity': 0}, 2000, function(){
-        $(this).html(message).animate({'opacity': 1}, 2000, function() {
-            $(this).html(message).animate({'opacity': 0}, 2000, function() {
-            });
-        });
-    });
+    document.getElementById('canvas-message').innerHTML = message;
+    document.getElementById('canvas-message').style.opacity = 1;
+    messageStartTime = Date.now();
 }
 
 function updateChannels(newChannels) {
@@ -438,8 +289,8 @@ function updateChannels(newChannels) {
             SIGNAL_SUSTAIN += 1;
         }
 
-        if (shape_array[state][animState] == 'voltage') {
-            [vertexHome, , ease, rotation, zoom] = switchToVoltage(pointCount)
+        if (visualizations[state].shapes.includes('channels')) {
+            [vertexHome, , ease, rotation, zoom] = switchToChannels(pointCount)
         }
 
         passedEEGCoords = eegCoords.map((arr,ind) => {
@@ -485,13 +336,27 @@ function toggleDevTools(){
     if (devTools){
         document.getElementById('developer-tools').style.left = '0'
         canvas.width = window.innerWidth - 200
+        document.getElementById('bottom-bar').style.width = `calc(100vw - 200px)`;
     } else {
         document.getElementById('developer-tools').style.left = '-200px'
         canvas.width = window.innerWidth
+        document.getElementById('bottom-bar').style.width = `100vw`;
     }
     document.getElementById('canvas-message').style.width = `${canvas.width}px`;
 }
 
+function toggleChat(){
+    chat = !chat; 
+    
+    if (chat){
+        document.getElementById('chat').style.right = '0'
+    } else {
+        document.getElementById('chat').style.right = '-300px'
+    }
+}
+
+
+// Resizing
 window.onresize = function() {
     canvas.height = window.innerHeight;
     canvas.width = window.innerWidth;
@@ -516,3 +381,4 @@ function resize(canvas) {
       canvas.height = displayHeight;
     }
   }
+  

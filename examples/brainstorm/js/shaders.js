@@ -19,16 +19,15 @@ uniform float synchrony;
 uniform float u_time;
 uniform int u_ambientNoiseToggle;
 uniform vec3 eeg_coords[16];
-uniform float eeg_power[16];
+uniform float eeg_signal[16];
 uniform vec2 aspectChange;
 
-float sync_scaling = 0.5+((0.5*synchrony)*0.5); 
-
-float ambient_noise_multiplier = (0.5-sync_scaling);
+float sync_scaled = ((0.5*synchrony)); 
 
 vec3 distortion_noise;
 vec3 ambient_noise;
 
+vec3 positionTransforms;
 vec4 positionProjected;
 vec2 currentScreen;
 
@@ -109,16 +108,10 @@ float cnoise(vec3 P){
 
 void main() {
 
-    if (synchrony > 0.0) {
-        ambient_noise_multiplier = 0.0;
-    }
-    float x = position.x;
-     float y = position.y;
-     float z = position.z;
-     distortion_noise = 100.0*vec3(0,0,u_noiseCoeff) * cnoise(vec3(x/100.0 + u_distortion, y/100.0 + u_distortion,z/100.0 + u_distortion));
+     distortion_noise = 100.0*vec3(0,0,u_noiseCoeff) * cnoise(vec3(position.x/100.0 + u_distortion, position.y/100.0 + u_distortion,position.z/100.0 + u_distortion));
      
      if (u_ambientNoiseToggle == 1){
-        ambient_noise = 100.0*vec3(0.01,0.01+5.0*ambient_noise_multiplier,0.01+5.0*ambient_noise_multiplier) * cnoise(vec3(x/100.0 + u_time, y/100.0 + u_time,z/100.0 + u_time));
+        ambient_noise = 100.0*vec3(0.01,0.01+5.0*sync_scaled,0.01+5.0*sync_scaled) * cnoise(vec3(position.x/100.0 + u_time, position.y/100.0 + u_time, position.z/100.0 + u_time));
      } 
      
      // Initialize color at zero
@@ -129,14 +122,14 @@ void main() {
         vColor = vec3(1.0,1.0,1.0);
         for (int i = 0; i < 16; i++){
             if (abs(distance(eeg_coords[i],position)) <= 75.0){
-                if (eeg_power[i] > 0.0){
-                    vColor.y -= 0.5*(eeg_power[i])*(1.0-pow(abs(distance(eeg_coords[i],position)/75.0),2.0));
-                    vColor.z -= 0.2*(eeg_power[i])*(1.0-pow(abs(distance(eeg_coords[i],position)/75.0),2.0));
-                } else if (eeg_power[i] < 0.0){
-                    vColor.x += 0.5*(eeg_power[i])*(1.0-pow(abs(distance(eeg_coords[i],position)/75.0),2.0));
-                    vColor.y += 0.2*(eeg_power[i])*(1.0-pow(abs(distance(eeg_coords[i],position)/75.0),2.0));
+                if (eeg_signal[i] > 0.0){
+                    vColor.y -= 0.5*(eeg_signal[i])*(1.0-pow(abs(distance(eeg_coords[i],position)/75.0),2.0));
+                    vColor.z -= 0.2*(eeg_signal[i])*(1.0-pow(abs(distance(eeg_coords[i],position)/75.0),2.0));
+                } else if (eeg_signal[i] < 0.0){
+                    vColor.x += 0.5*(eeg_signal[i])*(1.0-pow(abs(distance(eeg_coords[i],position)/75.0),2.0));
+                    vColor.y += 0.2*(eeg_signal[i])*(1.0-pow(abs(distance(eeg_coords[i],position)/75.0),2.0));
                 }
-            }  else if (eeg_power[i] == 0.0){
+            }  else if (eeg_signal[i] == 0.0){
                 vColor = vec3(0.5,0.5,0.5);
             }
         }
@@ -148,8 +141,15 @@ void main() {
          }
      } 
 
-     positionProjected = matrix * vec4((x+distortion_noise.x+ambient_noise.x),(y+distortion_noise.y+ambient_noise.y),(z+distortion_noise.z+z_displacement+ambient_noise.z),1) * vec4(sync_scaling,sync_scaling,sync_scaling,1.0);
-    //  currentScreen = positionProjected.xy / positionProjected.w;
+
+     positionTransforms = position + distortion_noise + ambient_noise;
+     positionTransforms.z += z_displacement;
+     
+     if (effect == 2){
+        positionTransforms *= 1.0-sync_scaled;
+     }
+     
+     positionProjected = matrix * vec4(positionTransforms,1.0);
     positionProjected.x /= aspectChange.x;
     positionProjected.y /= aspectChange.y;
 

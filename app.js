@@ -66,11 +66,11 @@ app.use(function(req, res, next) {
     'http://brainsatplay.azurewebsites.net',
     'https://brainsatplay.com'
   ];
-  const origin = req.headers.origin;
 
+  const origin = req.headers.origin;
   if (validOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
-  } 
+  }
 
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   res.header("Access-Control-Allow-Methods",
@@ -99,7 +99,7 @@ app.use(function(err, req, res, next) {
 
 // Static Middleware
 app.use(express.static(path.join(__dirname, 'examples',example)));
-app.use(favicon(path.join(__dirname, 'examples', example, 'favicon.ico')));
+app.use(favicon(path.join(__dirname, 'examples', example, 'favicons','favicon.ico')));
 
 // Setting the port
 app.set('port', port);
@@ -126,8 +126,8 @@ server.on('upgrade', function (request, socket, head) {
     let userId;
     let type;
 
-    if (getCookie(request, 'userId') != undefined) {
-      userId =  getCookie(request, 'userId')
+    if (getCookie(request, 'id') != undefined) {
+      userId =  getCookie(request, 'id')
       type = getCookie(request, 'connectionType')
     } else{
       let protocols = request.headers['sec-websocket-protocol'].split(', ')
@@ -137,7 +137,7 @@ server.on('upgrade', function (request, socket, head) {
 
 
     if (!userId) {
-      console.log('no userId')
+      console.log('no id')
       socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
       socket.destroy();
       return;
@@ -160,9 +160,8 @@ server.on('upgrade', function (request, socket, head) {
 wss.on('connection', function (ws, command, request) {
   let userId;
   let type;
-
-    if (getCookie(request, 'userId') != undefined) {
-      userId =  getCookie(request, 'userId')
+    if (getCookie(request, 'id') != undefined) {
+      userId =  getCookie(request, 'id')
       type = getCookie(request, 'connectionType')
     } else if (request.headers['sec-websocket-protocol'] != undefined) {
       let protocols = request.headers['sec-websocket-protocol'].split(', ')
@@ -174,8 +173,7 @@ wss.on('connection', function (ws, command, request) {
 
   let mirror_id;
   if (command === 'close'){
-    console.log('closing')
-    ws.send('User already has a brain on the network')
+      ws.send('User already has a brain on the network')
     return
   }
   else if (command === 'interfaces' || command === 'brains'){

@@ -50,7 +50,7 @@ class BrainsAtPlayStreamer(object):
         # Convert Cookies into Proper Format
         cookies = ""        
         for cookie in (cookieDict):
-            if (cookie == 'userId'):
+            if (cookie == 'id'):
                 if (userId != None):
                     cookieDict[cookie] = userId
                 self.id = cookieDict[cookie]
