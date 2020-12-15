@@ -21,6 +21,7 @@ uniform int u_ambientNoiseToggle;
 uniform vec3 eeg_coords[16];
 uniform float eeg_signal[16];
 uniform vec2 aspectChange;
+uniform vec2 mousePos;
 
 float sync_scaled = ((0.5*synchrony)); 
 
@@ -111,15 +112,19 @@ void main() {
      distortion_noise = 100.0*vec3(0,0,u_noiseCoeff) * cnoise(vec3(position.x/100.0 + u_distortion, position.y/100.0 + u_distortion,position.z/100.0 + u_distortion));
      
      if (u_ambientNoiseToggle == 1){
+        if (effect == 2){
         ambient_noise = 100.0*vec3(0.01,0.01+5.0*sync_scaled,0.01+5.0*sync_scaled) * cnoise(vec3(position.x/100.0 + u_time, position.y/100.0 + u_time, position.z/100.0 + u_time));
-     } 
+        } else{
+            ambient_noise = 100.0*vec3(0.01,0.01,0.01) * cnoise(vec3(position.x/100.0 + u_time, position.y/100.0 + u_time, position.z/100.0 + u_time));
+        }
+    } 
      
      // Initialize color at zero
      vColor = vec3(1.0,1.0,1.0);
 
+
      // Add color effects
      if (effect == 1){
-        vColor = vec3(1.0,1.0,1.0);
         for (int i = 0; i < 16; i++){
             if (abs(distance(eeg_coords[i],position)) <= 75.0){
                 if (eeg_signal[i] > 0.0){
@@ -140,6 +145,15 @@ void main() {
             vColor = vec3((.5-synchrony),.5,(synchrony + .5));
          }
      } 
+     else if (effect == 3){
+        if (abs(distance(150.0*-cos(u_time*2.0),position.z)) <= 5.0){
+            vColor.y = 0.0;
+            vColor.z = 0.0;
+        }
+        // else {
+        //     vColor = vec3(0.5,0.5,0.5);
+        // }
+     }
 
 
      positionTransforms = position + distortion_noise + ambient_noise;
@@ -159,6 +173,14 @@ void main() {
         positionProjected.xy *= min(aspectChange.x,aspectChange.y);
     }
 
+
+    // Add mouse effects
+    if (abs(distance(mousePos,positionProjected.xy)) <= 100.0){
+        positionProjected += 100.0*(100.0/abs(distance(mousePos,positionProjected.xy)))*cnoise(vec3(position.x/100.0 + u_time, position.y/100.0 + u_time, position.z/100.0 + u_time));
+    }
+
+
+    // Pass final positions
     gl_Position = positionProjected;
     gl_PointSize = 1.0;
 }`

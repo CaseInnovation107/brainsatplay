@@ -160,6 +160,7 @@ server.on('upgrade', function (request, socket, head) {
 wss.on('connection', function (ws, command, request) {
   let userId;
   let type;
+
     if (getCookie(request, 'id') != undefined) {
       userId =  getCookie(request, 'id')
       type = getCookie(request, 'connectionType')
@@ -194,7 +195,7 @@ wss.on('connection', function (ws, command, request) {
   });
 
   ws.send(initStr)
-
+  
     if (type === 'brains'){
 
       let str = JSON.stringify({
@@ -203,9 +204,10 @@ wss.on('connection', function (ws, command, request) {
         destination: 'BrainsAtPlay'
       });
 
-    // Broadcast new number of brains to all interfacea
+    // Broadcast new number of brains to all interfaces
     app.get('interfaces').forEach(function each(clients, id) {
       clients.forEach(function allClients(client){
+        console.log('sending to ' + client)
         if (client.id != userId){
         if (client.readyState === WebSocket.OPEN) {
           client.send(str);

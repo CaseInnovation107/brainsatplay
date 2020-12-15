@@ -25,6 +25,11 @@ function mouseState() {
     }
 }
 
+function mousePos(canvas, evt) {
+    var rect = canvas.getBoundingClientRect();
+    return [evt.clientX - rect.left,evt.clientY - rect.top]
+}
+
 // Mouse Move 
 function mouseMove(ev){
     moveStatus = true;
@@ -69,8 +74,8 @@ function keyboardShortcuts(ev){
                 }
         } 
         // Key "i" opens developer tools
-        else if (ev.keyCode == '73'){
-            toggleDevTools()
-        }
+        // else if (ev.keyCode == '73'){
+        //     toggleDevTools()
+        // }
     }
 }

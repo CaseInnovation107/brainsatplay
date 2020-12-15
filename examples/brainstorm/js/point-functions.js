@@ -311,10 +311,10 @@ function getChannels(pointCloud, pointCount, numUsers) {
             user++;
         }
 
-        point1 = [user*.01,                                 // Separate Each User
+        point1 = [user*1,                                 // Separate Each User
                     (y) / (factor/.8),  // Length of Channels Display
                     z];    // Move to Correct Channel Position
-        point2 = [user*.01, ((y+1)) / (factor/.8), z];
+        point2 = [user*1, ((y+1)) / (factor/.8), z];
         pointCloud.push(...point1);
         pointCloud.push(...point2);
         y++;

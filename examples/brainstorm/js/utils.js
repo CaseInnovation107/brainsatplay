@@ -144,7 +144,7 @@ function sendSignal(channels) {
         })
 }
 
-function switchToChannels(pointCount){
+function switchToChannels(pointCount,users=undefined){
     // Reset View Matrix
     viewMatrix = mat4.create();
     cameraHome = visualizations[state].zoom;
@@ -155,7 +155,11 @@ function switchToChannels(pointCount){
 
     let vertexHome;
     // Create signal dashboard
-    vertexHome = getChannels([],pointCount,brains.users.size);
+    if (users == undefined){
+        vertexHome = getChannels([],pointCount,brains.users.size);
+    } else {
+        vertexHome = getChannels([],pointCount,users);
+    }
     let ease = true;
     let rotation = false;
     let zoom = false;
@@ -192,9 +196,13 @@ function stateManager(){
     // reset displacement if leaving channels visualization
 
     if (visualizations[prevState].shapes.includes('channels')) {
-        brains.initializeUserBuffers();
+        if (visualizations[state].signaltype != 'voltage'){
+            brains.initializeBuffer(buffer='userOtherBuffers');
+        } else {
+            brains.initializeBuffer()
+        }
         gl.bindBuffer(gl.ARRAY_BUFFER, dispBuffer)
-        gl.bufferData(gl.ARRAY_BUFFER, brains.WebGLChannelDisplacementBuffer(), gl.DYNAMIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, brains.BufferToWebGL(), gl.DYNAMIC_DRAW);
     }
 
     // set up variables for new state
@@ -207,10 +215,15 @@ function stateManager(){
 
     if (visualizations[state].shapes.includes('channels')){
         cameraHome = visualizations[state].zoom;
-        [vertexHome, viewMatrix, ease, rotation, zoom] = switchToChannels(pointCount)
 
-        brains.initializeUserBuffers();
-        if (uniformLocations != undefined){
+            if (visualizations[state].signaltype != 'voltage'){
+                [vertexHome, , ease, rotation, zoom] = switchToChannels(pointCount,1)
+                brains.initializeBuffer(buffer='userOtherBuffers');
+            } else {
+                [vertexHome, , ease, rotation, zoom] = switchToChannels(pointCount)
+                brains.initializeBuffer()
+            }
+            if (uniformLocations != undefined){
             gl.uniform1i(uniformLocations.ambientNoiseToggle, 0);
         }
     }
@@ -229,8 +242,8 @@ function stateManager(){
     if (!visualizations[state].shapes.includes('brain') && !visualizations[state].shapes.includes('channels')){
         vertexHome = createPointCloud(visualizations[state].shapes, pointCount);
         ease = true;
-        rotation = false;
-        zoom = false;
+        rotation = true;
+        zoom = true;
     }
 
     if (!rotation){
@@ -290,7 +303,13 @@ function updateChannels(newChannels) {
         }
 
         if (visualizations[state].shapes.includes('channels')) {
-            [vertexHome, , ease, rotation, zoom] = switchToChannels(pointCount)
+            if (visualizations[state].signaltype != 'voltage'){
+                [vertexHome, , ease, rotation, zoom] = switchToChannels(pointCount,1)
+                brains.initializeBuffer(buffer='userOtherBuffers');
+            } else {
+                [vertexHome, , ease, rotation, zoom] = switchToChannels(pointCount)
+                brains.initializeBuffer()
+            }
         }
 
         passedEEGCoords = eegCoords.map((arr,ind) => {
@@ -304,7 +323,7 @@ function updateChannels(newChannels) {
         gl.uniform3fv(uniformLocations.eeg_coords, new Float32Array(passedEEGCoords.flat()));
 
 
-        brains.initializeUserBuffers();
+        // brains.initializeBuffer(separateUsers=true);
     } else {
         channels = newChannels;
     }
@@ -344,6 +363,7 @@ function toggleDevTools(){
     }
     document.getElementById('canvas-message').style.width = `${canvas.width}px`;
 }
+
 
 function toggleChat(){
     chat = !chat; 
