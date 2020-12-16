@@ -15,10 +15,10 @@ async def beginStream(BOARD, PORT, URL, USERID):
 
 async def main():
 
-    BOARD = 'CYTON_DAISY_BOARD' 
-    PORT = '/dev/cu.usbserial-DM01N7AE'
+    BOARD = 'SYNTHETIC_BOARD' 
+    PORT = None
     URL = 'http://localhost'
-    USERID = '53da8978-56a6-4a8b-b1ff-a9fbeeed03da'
+    USERID = None
     
                                 # Board Types
                                     # SYNTHETIC_BOARD                          
