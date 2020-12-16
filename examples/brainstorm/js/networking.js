@@ -83,15 +83,14 @@ function initializeWebsocket(){
 
         } else if (obj.destination == 'init'){
 
-            console.log(obj)
-
             for (newUser = 0; newUser < obj.n; newUser++){
                 if (brains.users.get(obj.ids[newUser]) == undefined && obj.ids[newUser] != undefined){
-                    brains.addBrain(obj.ids[newUser])
+                    brains.addBrain(obj.ids[newUser], obj.channelNames[newUser])
                 }
             }
             
             brains.initializeBuffer(buffer='userVoltageBuffer')
+            eegChannelsOfInterest = updateEEGChannelsOfInterest()
 
             // Announce number of brains currently online
             if (obj.n > 0 && brains.users.get('me') != undefined){
@@ -108,9 +107,6 @@ function initializeWebsocket(){
         }
         else if (obj.destination == 'BrainsAtPlay'){
 
-            console.log('new brain')
-            console.log(obj)
-
             // let reallocationInd;
             update = obj.n;
             if (update > 0 && brains.users.get('me') != undefined){
@@ -118,7 +114,9 @@ function initializeWebsocket(){
             }
 
             if (update == 1){
-                brains.addBrain(obj.id)
+                console.log(obj.channelNames)
+                brains.addBrain(obj.id, obj.channelNames)
+                document.getElementById('nBrains').innerHTML = `${brains.users.size}`
                 reallocationInd = brains.users.size - 1
 
             } else if (update == -1){
@@ -134,18 +132,20 @@ function initializeWebsocket(){
                 brains.users.delete(obj.id)
 
                 if (brains.users.size == 0){
+                    announcement('all users left the brainstorm')
+                    document.getElementById('nBrains').innerHTML = `0`
                     brains.addBrain('me')
+                } else {
+                    document.getElementById('nBrains').innerHTML = `${brains.users.size}`
                 }
             }
-
-            announceUsers(update)
 
             if (state != 0){
                 stateManager()
                 // brains.reallocateUserBuffers(reallocationInd);
             }
             brains.initializeBuffer(buffer='userVoltageBuffer')
-            document.getElementById('nBrains').innerHTML = `${brains.users.size}`
+            eegChannelsOfInterest = updateEEGChannelsOfInterest()
             }
 
         else {

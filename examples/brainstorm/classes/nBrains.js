@@ -20,11 +20,15 @@ class BrainsAtPlay {
         }
     }
 
-    addBrain(id) {
-            // Create Brain
-            let brain = new Brain(id)
-            this.users.set(id, brain)
-            this.initializeBuffer();
+    addBrain(id,channelNames) {
+        let brain; 
+        if (channelNames == undefined){
+            brain = new Brain(id)
+        } else {
+            brain = new Brain(id,channelNames)
+        }
+        this.users.set(id, brain)
+        this.initializeBuffer();
     }
 
     getMaxChannelNumber(){

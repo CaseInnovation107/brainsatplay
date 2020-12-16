@@ -2,11 +2,12 @@ let maxTime = 10000; // 10 seconds
 let maxSize = 1000
 
 class Brain {
-    constructor(userId) {
+    constructor(userId, channelNames = 'Fz,C3,Cz,C4,Pz,PO7,Oz,PO8,F5,F7,F3,F1,F2,F4,F6,F8') {
     this.id = userId;
-    this.numChannels = 0;
-    this.buffer = [[]]
-    this.times = []
+    this.channelNames = channelNames.split(',')
+    this.numChannels = this.channelNames.length;
+    this.buffer = [[]];
+    this.times = [];
     }
 
     streamIntoBuffer(data) {
@@ -29,7 +30,6 @@ class Brain {
         })
 
         // this.trimBufferByTime()
-        this.numChannels = signal.length
         this.trimBufferBySize()
     }
     

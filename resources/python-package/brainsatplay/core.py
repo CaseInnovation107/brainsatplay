@@ -45,17 +45,26 @@ class Brain(object):
 
         cookieDict = res.cookies.get_dict()
         cookieDict['connectionType'] = 'brains'
+        cookieDict['channelNames'] = self.board.eeg_names
         
-
         # Convert Cookies into Proper Format
         cookies = ""        
-        for cookie in (cookieDict):
+        for cookie in cookieDict:
             if (cookie == 'id'):
                 if (userId != None):
                     cookieDict[cookie] = userId
                 self.id = cookieDict[cookie]
 
-            cookies += str(cookie + '=' + cookieDict[cookie] + '; ')
+            if isinstance(cookieDict[cookie],list):
+                cookie_in_progress = str(cookie + '=')
+                for ind,val in enumerate(cookieDict[cookie]):
+                    cookie_in_progress += str(val)
+                    if (ind != len(cookieDict[cookie])-1):
+                         cookie_in_progress +=  ','
+                    else:
+                        cookies += cookie_in_progress + '; '
+            else:
+                cookies += str(cookie + '=' + cookieDict[cookie] + '; ')
             
         # Add connectionType Cookie
         o = urlparse(url)
@@ -116,28 +125,20 @@ class Brain(object):
 
 
     def connect(self, board='SYNTHETIC_BOARD', port = None):
+        
+        params = BrainFlowInputParams()
+        board_id = BoardIds[board].value
 
         if board == 'CYTON_DAISY_BOARD':
-
-            board_id = BoardIds.CYTON_DAISY_BOARD.value
-            params = BrainFlowInputParams()
             params.serial_port = port
-            self.board = BoardShim(board_id, params)
-            self.board.rate = BoardShim.get_sampling_rate(board_id)
-            self.board.channels = BoardShim.get_eeg_channels(board_id)
-            self.board.time_channel = BoardShim.get_timestamp_channel(board_id)
-            self.board.eeg_channels = BoardShim.get_eeg_channels(board_id)
 
-        else:
-            BoardShim.enable_dev_board_logger()
-            board_id = BoardIds[board].value
-            params = BrainFlowInputParams()
-            self.board = BoardShim(board_id, params)
-            self.board.rate = BoardShim.get_sampling_rate(board_id)
-            self.board.channels = BoardShim.get_eeg_channels(board_id)
-            self.board.time_channel = BoardShim.get_timestamp_channel(board_id)
-            self.board.eeg_channels = BoardShim.get_eeg_channels(board_id)
-
+        # BoardShim.enable_dev_board_logger()
+        self.board = BoardShim(board_id, params)
+        self.board.rate = BoardShim.get_sampling_rate(board_id)
+        self.board.channels = BoardShim.get_eeg_channels(board_id)
+        self.board.time_channel = BoardShim.get_timestamp_channel(board_id)
+        self.board.eeg_channels = BoardShim.get_eeg_channels(board_id)
+        self.board.eeg_names = BoardShim.get_eeg_names(board_id)
         self.board.prepare_session()
 
     def stop(self, signal, frame):

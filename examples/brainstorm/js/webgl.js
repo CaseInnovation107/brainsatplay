@@ -34,6 +34,7 @@ function particleCloud() {
     gl.enableVertexAttribArray(positionLocation);
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexCurr), gl.DYNAMIC_DRAW);
+    // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(passedEEGCoords.flat(2)), gl.DYNAMIC_DRAW);
     gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
 
     dispBuffer = gl.createBuffer();
@@ -58,15 +59,6 @@ function particleCloud() {
         mousePos: gl.getUniformLocation(program,'mousePos'),
         colorToggle: gl.getUniformLocation(program,'colorToggle'),
     };
-
-    // only pass EEG coordinates for existing channels
-    passedEEGCoords = eegCoords.map((arr,ind) => {
-        if (ind >= channels){
-            return [NaN,NaN,NaN]
-        } else {
-            return arr
-        } 
-    })
 
     // initialize uniforms that don't change on every draw loop
     gl.uniform3fv(uniformLocations.eeg_coords, new Float32Array(passedEEGCoords.flat()));
@@ -155,7 +147,9 @@ function particleCloud() {
 
         // Get synchrony
         if (visualizations[state].signaltype == 'synchrony') {
-            // Synchrony of you and other users
+            
+            
+            // NOTE: Synchrony of first two users only
 
             if (brains.users.size > 1){
             // Generate edge array
@@ -214,36 +208,39 @@ function particleCloud() {
         }
 
         // Update 3D brain color with your data
-        let projectionData = [];
+        let projectionData = new Array(passedEEGCoords.length).fill(NaN);
+        let dataOfInterest = []
         if (['projection','z_displacement'].includes(visualizations[state].effect)){
 
+            eegChannelsOfInterest.forEach((channel,ind) => {
             if (visualizations[state].signaltype == 'synchrony') {
-                projectionData = new_sync;
+                projectionData[channel] = new_sync[ind];
             } else {
-                for (let channel = 0; channel < eegCoords.length; channel++){
-                    if (brains.userVoltageBuffers[brains.me].length > channel){
+                    if (brains.userVoltageBuffers[brains.me].length > ind){
                         if (visualizations[state].signaltype == 'voltage'){
-                            projectionData.push(averagePower(brains.userVoltageBuffers[brains.me][channel]));
+                            projectionData[channel] = averagePower(brains.userVoltageBuffers[brains.me][ind]);
                         } else if (['delta','theta','alpha','beta','gamma'].includes(visualizations[state].signaltype)){
                             try {
                                 // NOTE: Not going to be correct with real-time sample rate
-                                projectionData.push(bci.bandpower(brains.userVoltageBuffers[brains.me][channel], samplerate, visualizations[state].signaltype, {relative: false}));
+                                projectionData[channel] = bci.bandpower(brains.userVoltageBuffers[brains.me][ind], samplerate, visualizations[state].signaltype, {relative: false});
                             } catch {
                                 console.log('sample rate too low')
                             }
                     } else {
-                        projectionData.push(0);
+                        projectionData[channel] = 0;
                     }
                     }
-                }
             }
+            dataOfInterest.push(projectionData[channel])
+        })
 
-        let totalAvg = average(projectionData);
-        let std = standardDeviation(projectionData);
+        let totalAvg = average(dataOfInterest);
+        let std = standardDeviation(dataOfInterest);
 
-        let relSignal = new Array(eegCoords.length).fill(0)
+        let relSignal = new Array(passedEEGCoords.length).fill(0)
         let sig;
-        for (let channel = 0; channel < projectionData.length; channel++){
+        
+        eegChannelsOfInterest.forEach((channel) => {
             sig = (projectionData[channel] - totalAvg)/std;
             if (isNaN(sig) && ['voltage','delta','theta','alpha','beta','gamma'].includes(visualizations[state].signaltype)){
                 relSignal[channel] = 0;
@@ -253,7 +250,7 @@ function particleCloud() {
             else {
                 relSignal[channel] = sig;
             }
-        }
+        })
 
         if (['projection'].includes(visualizations[state].effect)){
             gl.uniform1fv(uniformLocations.eeg_signal, new Float32Array(relSignal));
@@ -339,6 +336,8 @@ function particleCloud() {
 
         // Draw
         gl.drawArrays(visualizations[renderState].render, 0, vertexCurr.length / 3);
+        // gl.drawArrays(visualizations[renderState].render, 0, passedEEGCoords.length);
+
 
         // Update states for next animation loop
         prevState = state;

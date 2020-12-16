@@ -137,7 +137,6 @@ server.on('upgrade', function (request, socket, head) {
 
 
     if (!userId) {
-      console.log('no id')
       socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
       socket.destroy();
       return;
@@ -160,10 +159,12 @@ server.on('upgrade', function (request, socket, head) {
 wss.on('connection', function (ws, command, request) {
   let userId;
   let type;
+  let channelNames
 
     if (getCookie(request, 'id') != undefined) {
       userId =  getCookie(request, 'id')
       type = getCookie(request, 'connectionType')
+      channelNames = getCookie(request, 'channelNames')
     } else if (request.headers['sec-websocket-protocol'] != undefined) {
       let protocols = request.headers['sec-websocket-protocol'].split(', ')
       userId =  protocols[0]
@@ -178,19 +179,26 @@ wss.on('connection', function (ws, command, request) {
     return
   }
   else if (command === 'interfaces' || command === 'brains'){
-    mirror_id = app.get(command).get(userId).length
-    app.get(command).get(userId).push(ws);
+    mirror_id = app.get(command).get(userId).connections.length
+    app.get(command).get(userId).connections.push(ws);
   }
   else if (command === 'init'){ 
     mirror_id = 0;
-    let list = [ws]
-    app.get(type).set(userId, list);
-    console.log('adding userId: ' + userId + ' to the brainstorm')
+    app.get(type).set(userId, {connections: [ws], channelNames: channelNames});
   }
 
+  let channelNamesArray = []
+  let brains = app.get('brains')
+  let keys = Object.keys(Object.fromEntries(brains))
+
+  keys.forEach((key) => {
+    channelNamesArray.push(brains.get(key).channelNames)
+  })
+
   let initStr = JSON.stringify({
-      n: app.get('brains').size,
-      ids: Object.keys(Object.fromEntries(app.get('brains'))),
+      n: brains.size,
+      ids: keys,
+      channelNames: channelNamesArray,
       destination: 'init'
   });
 
@@ -201,13 +209,13 @@ wss.on('connection', function (ws, command, request) {
       let str = JSON.stringify({
         n: +1,
         id: userId,
+        channelNames: channelNames,
         destination: 'BrainsAtPlay'
       });
 
     // Broadcast new number of brains to all interfaces
     app.get('interfaces').forEach(function each(clients, id) {
-      clients.forEach(function allClients(client){
-        console.log('sending to ' + client)
+      clients.connections.forEach(function allClients(client){
         if (client.id != userId){
         if (client.readyState === WebSocket.OPEN) {
           client.send(str);
@@ -223,7 +231,7 @@ wss.on('connection', function (ws, command, request) {
       if (obj.destination == 'chat'){
         // Broadcast chat messages to all interfaces
         app.get('interfaces').forEach(function each(clients, id) {
-          clients.forEach(function allClients(client){
+          clients.connections.forEach(function allClients(client){
             if (client.readyState === WebSocket.OPEN) {
               client.send(str);
             }
@@ -240,7 +248,7 @@ wss.on('connection', function (ws, command, request) {
         app.get('interfaces').forEach(function each(clients, id) {
           obj.id = userId
           let str = JSON.stringify(obj)
-            clients.forEach(function allClients(client){
+          clients.connections.forEach(function allClients(client){
               if (client.readyState === WebSocket.OPEN) {
                 client.send(str);
               }
@@ -251,10 +259,10 @@ wss.on('connection', function (ws, command, request) {
 
     ws.on('close', function () {
 
-      if (app.get(type).get(userId).length == 1){
+      if (app.get(type).get(userId).connections.length == 1){
         app.get(type).delete(userId);
       } else {
-        app.get(type).get(userId).splice(mirror_id,1)
+        app.get(type).get(userId).connections.splice(mirror_id,1)
       }
     
       // Broadcast brains update to all interfacea
@@ -267,7 +275,7 @@ wss.on('connection', function (ws, command, request) {
         });
 
         app.get('interfaces').forEach(function each(clients, id) {
-          clients.forEach(function allClients(client){
+          clients.connections.forEach(function allClients(client){
             if (client.readyState === WebSocket.OPEN) {
               client.send(str);
             }

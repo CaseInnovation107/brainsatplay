@@ -280,29 +280,6 @@ function stateManager(){
     }
 }
 
-
-function announceUsers(diff){
-    let message ;
-    if (diff > 0){
-        if (diff == 1){
-            message = diff + ' brain joined the brainstorm';
-        } else{
-            message = diff + ' brains joined the brainstorm';
-        }
-    } else if (diff < 0){
-        if (brains.users.size == 0){
-            message = 'all brains left the brainstorm';
-        }
-        else if (diff == -1){
-            message = -diff + ' brain left the brainstorm';
-        } else {
-            message = -diff + ' brains left the brainstorm';
-        }
-    }
-    console.log(message)
-    announcement(message)
-}
-
 function announcement(message){
     document.getElementById('canvas-message').innerHTML = message;
     document.getElementById('canvas-message').style.opacity = 1;
@@ -392,6 +369,24 @@ function toggleChat(){
     } else {
         document.getElementById('chat').style.right = '-300px'
     }
+}
+
+
+// EEG Coordinates
+function updateEEGChannelsOfInterest(){
+    let eegChannelsOfInterest = []
+    let myBrain;
+    Object.keys(eegCoordinates).forEach((name,ind) => {
+        myBrain = brains.users.get(userId)
+        if (myBrain == undefined){
+            myBrain = brains.users.get('me')
+        }
+
+        if (myBrain.channelNames.includes(name)){
+            eegChannelsOfInterest.push(ind)
+        }
+    })
+    return eegChannelsOfInterest
 }
 
 
