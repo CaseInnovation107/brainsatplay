@@ -288,7 +288,7 @@ function getChannels(pointCloud, pointCount, numUsers) {
     let factor = (pointCount/((window.innerWidth)*numUsers*channels))
     let user = -1;
     let z;
-    let z_iter = ((window.innerHeight/6)/(channels/2))
+    let z_iter = ((window.innerHeight/4)/(channels/2))
     let y;
     let point1;
     let point2;
@@ -305,7 +305,7 @@ function getChannels(pointCloud, pointCount, numUsers) {
         }
 
         if (i % user_trigger == 0){
-            z = -(z_iter)*(channels/2) + z_iter/4;
+            z = -(z_iter)*(channels/2) + z_iter/2;
             y = -((window.innerWidth)/4)*factor;
             usr_inds.push(i * 3)
             user++;

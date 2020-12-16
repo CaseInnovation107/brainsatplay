@@ -56,6 +56,7 @@ function particleCloud() {
         ambientNoiseToggle: gl.getUniformLocation(program,'u_ambientNoiseToggle'),
         aspectChange: gl.getUniformLocation(program,'aspectChange'),
         mousePos: gl.getUniformLocation(program,'mousePos'),
+        colorToggle: gl.getUniformLocation(program,'colorToggle'),
     };
 
     // only pass EEG coordinates for existing channels
@@ -71,7 +72,7 @@ function particleCloud() {
     gl.uniform3fv(uniformLocations.eeg_coords, new Float32Array(passedEEGCoords.flat()));
     gl.uniform1i(uniformLocations.effect, effects.indexOf(visualizations[state].effect));
     gl.uniform1i(uniformLocations.ambientNoiseToggle, 1);
-
+    gl.uniform1i(uniformLocations.colorToggle, 1);
 
 // Create Model, View, and ProjectionMatrices
     const modelMatrix = mat4.create();
@@ -226,7 +227,7 @@ function particleCloud() {
                         } else if (['delta','theta','alpha','beta','gamma'].includes(visualizations[state].signaltype)){
                             try {
                                 // NOTE: Not going to be correct with real-time sample rate
-                                projectionData.push(bci.bandpower(brains.userVoltageBuffers[brains.me][channel], samplerate, visualizations[state].signaltype, {relative: true}));
+                                projectionData.push(bci.bandpower(brains.userVoltageBuffers[brains.me][channel], samplerate, visualizations[state].signaltype, {relative: false}));
                             } catch {
                                 console.log('sample rate too low')
                             }
@@ -264,10 +265,10 @@ function particleCloud() {
                     gl.bufferData(gl.ARRAY_BUFFER, brains.BufferToWebGL_Normalized(), gl.DYNAMIC_DRAW);
                 } else {
                     brains.updateBuffer(source=relSignal,buffer='userOtherBuffers')
-                    gl.bufferData(gl.ARRAY_BUFFER, brains.BufferToWebGL_Normalized(buffer='userOtherBuffers'), gl.DYNAMIC_DRAW);
+                    gl.bufferData(gl.ARRAY_BUFFER, brains.BufferToWebGL(buffer='userOtherBuffers'), gl.DYNAMIC_DRAW);
                 }
         }
-    }
+    } 
 
 
         // Ease camera
@@ -321,7 +322,7 @@ function particleCloud() {
                 if (renderLagStart == undefined){
                     renderLagStart = Date.now();
                 }
-                if (Date.now() - renderLagStart >= 1000){
+                if (Date.now() - renderLagStart >= 500){
                     renderState = state
                     renderLagStart = undefined;
                 }

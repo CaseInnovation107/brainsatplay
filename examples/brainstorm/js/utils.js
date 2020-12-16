@@ -26,7 +26,7 @@ function sum(acc,cur){
 function normalize(min, max,scaling) {
     var delta = max - min;
     return function (val) {
-        return scaling * ((val - min) / delta);
+        return scaling * (2*((val - min) / delta) - 1);
     };
 }
 
@@ -193,8 +193,10 @@ function distortToggle(){
 
 
 function stateManager(){
-    // reset displacement if leaving channels visualization
 
+    let shapes = visualizations[state].shapes
+
+    // reset displacement if leaving channels visualization
     if (visualizations[prevState].shapes.includes('channels')) {
         if (visualizations[state].signaltype != 'voltage'){
             brains.initializeBuffer(buffer='userOtherBuffers');
@@ -206,25 +208,32 @@ function stateManager(){
     }
 
     // set up variables for new state
-    if (visualizations[state].shapes.includes('brain')){
+    if (shapes.includes('brain')){
         vertexHome = [...brainVertices];
         ease = true;
         rotation = true;
         zoom = true;
     } 
 
-    if (visualizations[state].shapes.includes('channels')){
+    if (shapes.includes('channels')){
         cameraHome = visualizations[state].zoom;
 
-            if (visualizations[state].signaltype != 'voltage'){
-                [vertexHome, , ease, rotation, zoom] = switchToChannels(pointCount,1)
-                brains.initializeBuffer(buffer='userOtherBuffers');
-            } else {
-                [vertexHome, , ease, rotation, zoom] = switchToChannels(pointCount)
-                brains.initializeBuffer()
-            }
-            if (uniformLocations != undefined){
+        if (visualizations[state].signaltype != 'voltage'){
+            [vertexHome, , ease, rotation, zoom] = switchToChannels(pointCount,1)
+            brains.initializeBuffer(buffer='userOtherBuffers');
+        } else {
+            [vertexHome, , ease, rotation, zoom] = switchToChannels(pointCount)
+            brains.initializeBuffer()
+        }
+        if (uniformLocations != undefined){
             gl.uniform1i(uniformLocations.ambientNoiseToggle, 0);
+        }
+
+        // toggle color
+        if (visualizations[state].signaltype.includes('voltage')){
+            gl.uniform1i(uniformLocations.colorToggle, 0);
+        } else {
+            gl.uniform1i(uniformLocations.colorToggle, 1);
         }
     }
     else {
@@ -236,11 +245,12 @@ function stateManager(){
         mat4.invert(viewMatrix, viewMatrix);
         if (uniformLocations != undefined){
             gl.uniform1i(uniformLocations.ambientNoiseToggle, 1);
+            gl.uniform1i(uniformLocations.colorToggle, 1);
         }
     }
 
-    if (!visualizations[state].shapes.includes('brain') && !visualizations[state].shapes.includes('channels')){
-        vertexHome = createPointCloud(visualizations[state].shapes, pointCount);
+    if (!shapes.includes('brain') && !shapes.includes('channels')){
+        vertexHome = createPointCloud(visualizations[state].shapes, Math.round(pointCount/shapes.length));
         ease = true;
         rotation = true;
         zoom = true;
@@ -260,6 +270,13 @@ function stateManager(){
         document.getElementById('canvas-message').style.opacity = 1;
     } else if (document.getElementById('canvas-message').style.opacity != 0) {
         document.getElementById('canvas-message').style.opacity = 0;
+    }
+
+    // reset z_displacement to zero when not being actively updated
+    if (!['z_displacement'].includes(visualizations[state].effect) && dispBuffer != undefined){
+        brains.initializeBuffer()
+        gl.bindBuffer(gl.ARRAY_BUFFER, dispBuffer)
+        gl.bufferData(gl.ARRAY_BUFFER, brains.BufferToWebGL(buffer='userOtherBuffers'), gl.DYNAMIC_DRAW);
     }
 }
 
@@ -293,6 +310,8 @@ function announcement(message){
 }
 
 function updateChannels(newChannels) {
+
+        let shapes = visualizations[state].shapes
         
         if (channels != newChannels) {
             channels = newChannels;
@@ -302,12 +321,12 @@ function updateChannels(newChannels) {
             SIGNAL_SUSTAIN += 1;
         }
 
-        if (visualizations[state].shapes.includes('channels')) {
+        if (shapes.includes('channels')) {
             if (visualizations[state].signaltype != 'voltage'){
-                [vertexHome, , ease, rotation, zoom] = switchToChannels(pointCount,1)
+                [vertexHome, , ease, rotation, zoom] = switchToChannels(Math.round(pointCount/shapes.length),1)
                 brains.initializeBuffer(buffer='userOtherBuffers');
             } else {
-                [vertexHome, , ease, rotation, zoom] = switchToChannels(pointCount)
+                [vertexHome, , ease, rotation, zoom] = switchToChannels(Math.round(pointCount/shapes.length))
                 brains.initializeBuffer()
             }
         }

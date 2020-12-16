@@ -22,11 +22,13 @@ uniform vec3 eeg_coords[16];
 uniform float eeg_signal[16];
 uniform vec2 aspectChange;
 uniform vec2 mousePos;
+uniform int colorToggle;
 
 float sync_scaled = ((0.5*synchrony)); 
 
 vec3 distortion_noise;
 vec3 ambient_noise;
+float dist;
 
 vec3 positionTransforms;
 vec4 positionProjected;
@@ -113,7 +115,7 @@ void main() {
      
      if (u_ambientNoiseToggle == 1){
         if (effect == 2){
-        ambient_noise = 100.0*vec3(0.01,0.01+5.0*sync_scaled,0.01+5.0*sync_scaled) * cnoise(vec3(position.x/100.0 + u_time, position.y/100.0 + u_time, position.z/100.0 + u_time));
+            ambient_noise = 100.0*vec3(0.01,0.01+5.0*sync_scaled,0.01+5.0*sync_scaled) * cnoise(vec3(position.x/100.0 + u_time, position.y/100.0 + u_time, position.z/100.0 + u_time));
         } else{
             ambient_noise = 100.0*vec3(0.01,0.01,0.01) * cnoise(vec3(position.x/100.0 + u_time, position.y/100.0 + u_time, position.z/100.0 + u_time));
         }
@@ -122,45 +124,57 @@ void main() {
      // Initialize color at zero
      vColor = vec3(1.0,1.0,1.0);
 
-
      // Add color effects
-     if (effect == 1){
-        for (int i = 0; i < 16; i++){
-            if (abs(distance(eeg_coords[i],position)) <= 75.0){
-                if (eeg_signal[i] > 0.0){
-                    vColor.y -= 0.5*(eeg_signal[i])*(1.0-pow(abs(distance(eeg_coords[i],position)/75.0),2.0));
-                    vColor.z -= 0.2*(eeg_signal[i])*(1.0-pow(abs(distance(eeg_coords[i],position)/75.0),2.0));
-                } else if (eeg_signal[i] < 0.0){
-                    vColor.x += 0.5*(eeg_signal[i])*(1.0-pow(abs(distance(eeg_coords[i],position)/75.0),2.0));
-                    vColor.y += 0.2*(eeg_signal[i])*(1.0-pow(abs(distance(eeg_coords[i],position)/75.0),2.0));
-                }
-            }  else if (eeg_signal[i] == 0.0){
-                vColor = vec3(0.5,0.5,0.5);
+     if (colorToggle == 1){
+        if (effect == 1){
+            for (int i = 0; i < 16; i++){
+                if (abs(distance(eeg_coords[i],position)) <= 75.0){
+                    if (eeg_signal[i] > 0.0){
+                        vColor.y -= 0.5*(eeg_signal[i])*(1.0-pow(abs(distance(eeg_coords[i],position)/75.0),2.0));
+                        vColor.z -= 0.2*(eeg_signal[i])*(1.0-pow(abs(distance(eeg_coords[i],position)/75.0),2.0));
+                    } else if (eeg_signal[i] < 0.0){
+                        vColor.x += 0.5*(eeg_signal[i])*(1.0-pow(abs(distance(eeg_coords[i],position)/75.0),2.0));
+                        vColor.y += 0.2*(eeg_signal[i])*(1.0-pow(abs(distance(eeg_coords[i],position)/75.0),2.0));
+                    }
+                }  
+                // else if (eeg_signal[i] == 0.0){
+                //     vColor = vec3(0.5,0.5,0.5);
+                // }
+            }
+        } 
+        else if (effect == 2){
+
+            if (synchrony > 0.0){
+                vColor.y -= 0.5*(synchrony)*2.0;
+                vColor.z -= 0.2*(synchrony)*2.0;
+            } else if (synchrony < 0.0){
+                vColor.x += 0.5*synchrony*10.0;
+                vColor.y += 0.2*synchrony*10.0;
+            }
+        } 
+        else if (effect == 3){
+            dist = abs(distance(150.0*-cos(u_time*2.0),position.z));
+            if (dist <= 10.0){
+                vColor.y = 0.5;
+                vColor.z = 0.8;
             }
         }
-     } else if (effect == 2){
-         if (synchrony == 0.0) {
-            vColor = vec3(1.0,1.0,1.0);
-         } else {
-            vColor = vec3((.5-synchrony),.5,(synchrony + .5));
-         }
-     } 
-     else if (effect == 3){
-        if (abs(distance(150.0*-cos(u_time*2.0),position.z)) <= 5.0){
-            vColor.y = 0.0;
-            vColor.z = 0.0;
-        }
-        // else {
-        //     vColor = vec3(0.5,0.5,0.5);
-        // }
-     }
 
+        if (z_displacement > 0.0){
+            vColor.y -= 0.5*(z_displacement);
+            vColor.z -= 0.2*(z_displacement);
+        } else if (z_displacement < 0.0){
+            vColor.x += 0.5*(z_displacement);
+            vColor.y += 0.2*(z_displacement);
+        }
+
+    }
 
      positionTransforms = position + distortion_noise + ambient_noise;
      positionTransforms.z += z_displacement;
      
      if (effect == 2){
-        positionTransforms *= 1.0-sync_scaled;
+        positionTransforms *= (1.0+synchrony);
      }
      
      positionProjected = matrix * vec4(positionTransforms,1.0);
@@ -184,6 +198,7 @@ void main() {
     gl_Position = positionProjected;
     gl_PointSize = 1.0;
 }`
+
 
 
 //

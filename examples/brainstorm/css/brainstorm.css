@@ -500,8 +500,6 @@ canvas {
     left:0;
     opacity: 0%;
     padding: 25px;
-    height: 150px;
-    width: 200px;
     background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6));
 
     transition: 0.5s ease-in-out;

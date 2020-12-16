@@ -55,15 +55,16 @@ function wheelMove(ev) {
 function keyboardShortcuts(ev){
     let key_events = [37, 38, 39, 40,73];
     if (key_events.includes(ev.keyCode)){
-        if (ev.keyCode == '38') {
-            distortFlag = true;
-            if (distortIter == -1) {
-                distortion = 0;
-            }
-            distortIter = 1;
-        } else if (ev.keyCode == '40') {
-            distortIter =+ visualizations[state].ease*(-distortion);
-        } else if (ev.keyCode == '39' || ev.keyCode == '37') {
+        // if (ev.keyCode == '38') {
+        //     distortFlag = true;
+        //     if (distortIter == -1) {
+        //         distortion = 0;
+        //     }
+        //     distortIter = 1;
+        // } else if (ev.keyCode == '40') {
+        //     distortIter =+ visualizations[state].ease*(-distortion);
+        // } 
+        if (ev.keyCode == '39' || ev.keyCode == '37') {
 
                 if (ev.keyCode == '39' && state < (visualizations.length-1))
                 {
