@@ -153,10 +153,10 @@ void main() {
             }
         } 
         else if (effect == 3){
-            dist = abs(distance(150.0*-cos(u_time*2.0),position.z));
-            if (dist <= 10.0){
-                vColor.y = 0.5;
-                vColor.z = 0.8;
+            dist = abs(distance(150.0*-cos(u_time*9.0),position.z));
+                if (dist <= 10.0){
+                vColor.y = 0.0;
+                vColor.z = 0.0;
             }
         }
 

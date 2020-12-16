@@ -26,21 +26,18 @@ npm start
 
 
 ### Stream Data into the Server
-1. Install [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
-2. Navigate to the project's /resources/python directory
-3. Create a conda environment from the environment.yml file:
+1. Use your favorite environment management system (e.g. [Miniconda](https://docs.conda.io/en/latest/miniconda.html)) to create a new environment.
+2. Install the brainsatplay package
 ```bash
-conda env create -f environment.yml
+pip install brainsatplay
 ```
-4. Activate the environment:
-```bash
-conda activate brainsatplay
-```
-5. In stream.py, specify:
+3. Navigate to this project's /resources/python directory
+5. In stream.py, configure the following settings for your specific use-case:
 ```python
-TYPE = 'SYNTHETIC' 
-  # Synthetic Stream: 'SYNTHETIC'
-  # OpenBCI Board: 'CYTON_DAISY'
+BOARD = 'SYNTHETIC_BOARD' 
+  # Synthetic Stream: 'SYNTHETIC_BOARD'
+  # OpenBCI Board: 'CYTON_DAISY_BOARD'
+  # Neurosity Boards: 'NOTION_1_BOARD' or 'NOTION_2_BOARD'
 
 PORT = 'None' 
   # Synthetic Stream: None
@@ -52,7 +49,9 @@ URL = 'http://localhost'
   # Deployed Game: 'https://brainsatplay.azurewebsites.net'
 
 USERID = None
-  # Replace this with the USERID found on the client to view your brain activity there
+  # None (get a random ID)
+  # Get ID string from website to view data on the browser
+
 ```
 6. Begin streaming:
 ```bash

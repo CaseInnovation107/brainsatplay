@@ -1,39 +1,42 @@
 import sys
 import os
-from BrainsAtPlayStreamer import BrainsAtPlayStreamer 
+from brainsatplay.core import Brain 
 import numpy as np
 import asyncio
 
-async def beginStream(TYPE, PORT, URL, USERID):
+async def beginStream(BOARD, PORT, URL, USERID):
 
     # Initialize the Trace
-    brain = BrainsAtPlayStreamer()
+    brain = Brain()
 
     # Connect Websocket + EEG headset through Brainflow
-    await brain.connect(streamType=TYPE,port=PORT)
+    brain.connect(board=BOARD,port=PORT)
     await brain.stream(url=URL,userId=USERID)
 
 async def main():
 
-    TYPE =  'CYTON_DAISY' # 'SYNTHETIC' #'CYTON_DAISY' # 
-                            # Streams
-                                # CYTON_DAISY
-                                # SYNTHETIC
+    BOARD = 'SYNTHETIC_BOARD' 
+    PORT = None
+    URL = 'https://brainsatplay.azurewebsites.net'
+    USERID = None
+    
+                                # Board Types
+                                    # SYNTHETIC_BOARD                          
+                                    # CYTON_DAISY_BOARD
+                                    # NOTION_1_BOARD
+                                    # NOTION_2_BOARD
 
-                            # Ports
-                                # Mac: '/dev/cu.usbserial-DM01N7AE'
-                                # Windows: 'COM4'
-                                # Synthetic: None
-    PORT = '/dev/cu.usbserial-DM01N7AE'; # '/dev/cu.usbserial-DM01N7AE' # None # /dev/cu.usbserial-DM01N7AE
+                                # Port Syntax (required for CYTON_DAISY_BOARD only)
+                                    # Mac Style: '/dev/cu.usbserial-DM01N7AE'
+                                    # Windows Style: 'COM4'
+                                    # Synthetic: None
 
-    URL = 'http://localhost' # 'https://brainsatplay.azurewebsites.net' # 'http://localhost' # 'https://brainsatplay.azurewebsites.net'
+                                # ID Styles
+                                    # None (get a random ID)
+                                    # Get ID string from website to view data on the browser
 
-    USERID = '53da8978-56a6-4a8b-b1ff-a9fbeeed03da'; # 'f51ff9e3-621a-4df2-81e7-79ee7872316e'
-                    # Options
-                        # None
-                        # [get your ID from Website UI]
 
-    brain = asyncio.create_task(beginStream(TYPE, PORT, URL,USERID))
+    brain = asyncio.create_task(beginStream(BOARD, PORT, URL, USERID))
     await brain
 
 if __name__ == "__main__":
