@@ -31,7 +31,7 @@ npm start
 ```bash
 pip install brainsatplay
 ```
-3. Navigate to this project's /resources/python directory
+3. Navigate to this project's /resources/python-package directory
 4. In stream.py, configure the following settings for your specific use-case:
 ```python
 BOARD = 'SYNTHETIC_BOARD' 
