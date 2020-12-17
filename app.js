@@ -196,7 +196,8 @@ wss.on('connection', function (ws, command, request) {
   })
 
   let initStr = JSON.stringify({
-      n: brains.size,
+      nBrains: brains.size,
+      nInterfaces: app.get('interfaces').size,
       ids: keys,
       channelNames: channelNamesArray,
       destination: 'init'
@@ -204,13 +205,11 @@ wss.on('connection', function (ws, command, request) {
 
   ws.send(initStr)
   
-    if (type === 'brains'){
-
       let str = JSON.stringify({
         n: +1,
         id: userId,
         channelNames: channelNames,
-        destination: 'BrainsAtPlay'
+        destination: type
       });
 
     // Broadcast new number of brains to all interfaces
@@ -224,7 +223,6 @@ wss.on('connection', function (ws, command, request) {
       })
     });
 
-}
 
     ws.on('message', function (str) {
       let obj = JSON.parse(str);
@@ -266,12 +264,11 @@ wss.on('connection', function (ws, command, request) {
       }
     
       // Broadcast brains update to all interfacea
-      if (type == 'brains'){
 
         let str = JSON.stringify({
           n: -1,
           id: userId,
-          destination: 'BrainsAtPlay'
+          destination: type
         });
 
         app.get('interfaces').forEach(function each(clients, id) {
@@ -281,7 +278,6 @@ wss.on('connection', function (ws, command, request) {
             }
           })
         });
-    }
     });
 });
 

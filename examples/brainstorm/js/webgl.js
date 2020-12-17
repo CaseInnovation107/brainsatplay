@@ -150,7 +150,7 @@ function particleCloud() {
             
             
             // NOTE: Synchrony of first two users only
-
+            synchrony.shift()
             if (brains.users.size > 1){
             // Generate edge array
             keys = brains.users.keys()
@@ -160,15 +160,13 @@ function particleCloud() {
             currentEdge.push(keys.next().value) // Brain 2
             edgeArray.push(currentEdge)
             new_sync = brains.synchrony('pcc',edgeArray)
-            // Slowly ease to the newest synchrony value
-            synchrony.shift()
-            if (!isNaN(average(new_sync))) {
-                synchrony.push(average(new_sync))
-            } else {
-                synchrony.push(0)
-            }
         } else {
-            synchrony.shift()
+            new_sync = new Array(channels).fill(0)
+        }
+
+        if (!isNaN(average(new_sync))) {
+            synchrony.push(average(new_sync))
+        } else {
             synchrony.push(0)
         }
     } else {
@@ -210,13 +208,13 @@ function particleCloud() {
         // Update 3D brain color with your data
         let projectionData = new Array(passedEEGCoords.length).fill(NaN);
         let dataOfInterest = []
-        if (['projection','z_displacement'].includes(visualizations[state].effect)){
 
+        if (['projection','z_displacement'].includes(visualizations[state].effect)){
             eegChannelsOfInterest.forEach((channel,ind) => {
             if (visualizations[state].signaltype == 'synchrony') {
                 projectionData[channel] = new_sync[ind];
             } else {
-                    if (brains.userVoltageBuffers[brains.me].length > ind){
+                    if (brains.me != undefined && brains.userVoltageBuffers[brains.me].length > ind){
                         if (visualizations[state].signaltype == 'voltage'){
                             projectionData[channel] = averagePower(brains.userVoltageBuffers[brains.me][ind]);
                         } else if (['delta','theta','alpha','beta','gamma'].includes(visualizations[state].signaltype)){
@@ -252,7 +250,7 @@ function particleCloud() {
             }
         })
 
-        if (['projection'].includes(visualizations[state].effect)){
+        if (['projection'].includes(visualizations[state].effect) && brains.me != undefined){
             gl.uniform1fv(uniformLocations.eeg_signal, new Float32Array(relSignal));
         } 
         
@@ -261,7 +259,11 @@ function particleCloud() {
                 if (visualizations[state].signaltype == 'voltage'){
                     gl.bufferData(gl.ARRAY_BUFFER, brains.BufferToWebGL_Normalized(), gl.DYNAMIC_DRAW);
                 } else {
-                    brains.updateBuffer(source=relSignal,buffer='userOtherBuffers')
+                    if (brains.me != undefined){
+                        brains.updateBuffer(source=relSignal,buffer='userOtherBuffers')
+                    } else {
+                        brains.updateBuffer(source=new Array(relSignal.length).fill(NaN),buffer='userOtherBuffers')
+                    }
                     gl.bufferData(gl.ARRAY_BUFFER, brains.BufferToWebGL(buffer='userOtherBuffers'), gl.DYNAMIC_DRAW);
                 }
         }

@@ -144,7 +144,8 @@ function sendSignal(channels) {
         })
 }
 
-function switchToChannels(pointCount,users=undefined){
+function switchToChannels(pointCount,users){
+
     // Reset View Matrix
     viewMatrix = mat4.create();
     cameraHome = visualizations[state].zoom;
@@ -155,11 +156,7 @@ function switchToChannels(pointCount,users=undefined){
 
     let vertexHome;
     // Create signal dashboard
-    if (users == undefined){
-        vertexHome = getChannels([],pointCount,brains.users.size);
-    } else {
-        vertexHome = getChannels([],pointCount,users);
-    }
+    vertexHome = getChannels([],pointCount,users);
     let ease = true;
     let rotation = false;
     let zoom = false;
@@ -201,7 +198,8 @@ function stateManager(){
         if (visualizations[state].signaltype != 'voltage'){
             brains.initializeBuffer(buffer='userOtherBuffers');
         } else {
-            brains.initializeBuffer()
+            brains.initializeBuffer(buffer='userOtherBuffers')
+            brains.initializeBuffer(buffer='userVoltageBuffers')
         }
         gl.bindBuffer(gl.ARRAY_BUFFER, dispBuffer)
         gl.bufferData(gl.ARRAY_BUFFER, brains.BufferToWebGL(), gl.DYNAMIC_DRAW);
@@ -217,13 +215,12 @@ function stateManager(){
 
     if (shapes.includes('channels')){
         cameraHome = visualizations[state].zoom;
-
+        [vertexHome, , ease, rotation, zoom] = switchToChannels(Math.round(pointCount/shapes.length),brains.users.size)
         if (visualizations[state].signaltype != 'voltage'){
-            [vertexHome, , ease, rotation, zoom] = switchToChannels(pointCount,1)
             brains.initializeBuffer(buffer='userOtherBuffers');
         } else {
-            [vertexHome, , ease, rotation, zoom] = switchToChannels(pointCount)
-            brains.initializeBuffer()
+            brains.initializeBuffer(buffer='userOtherBuffers')
+            brains.initializeBuffer(buffer='userVoltageBuffers')
         }
         if (uniformLocations != undefined){
             gl.uniform1i(uniformLocations.ambientNoiseToggle, 0);
@@ -274,7 +271,8 @@ function stateManager(){
 
     // reset z_displacement to zero when not being actively updated
     if (!['z_displacement'].includes(visualizations[state].effect) && dispBuffer != undefined){
-        brains.initializeBuffer()
+        brains.initializeBuffer(buffer='userOtherBuffers')
+        brains.initializeBuffer(buffer='userVoltageBuffers')
         gl.bindBuffer(gl.ARRAY_BUFFER, dispBuffer)
         gl.bufferData(gl.ARRAY_BUFFER, brains.BufferToWebGL(buffer='userOtherBuffers'), gl.DYNAMIC_DRAW);
     }
@@ -299,12 +297,12 @@ function updateChannels(newChannels) {
         }
 
         if (shapes.includes('channels')) {
+            [vertexHome, , ease, rotation, zoom] = switchToChannels(Math.round(pointCount/shapes.length),brains.users.size)
             if (visualizations[state].signaltype != 'voltage'){
-                [vertexHome, , ease, rotation, zoom] = switchToChannels(Math.round(pointCount/shapes.length),1)
                 brains.initializeBuffer(buffer='userOtherBuffers');
             } else {
-                [vertexHome, , ease, rotation, zoom] = switchToChannels(Math.round(pointCount/shapes.length))
-                brains.initializeBuffer()
+                brains.initializeBuffer(buffer='userOtherBuffers')
+                brains.initializeBuffer(buffer='userVoltageBuffers')
             }
         }
 

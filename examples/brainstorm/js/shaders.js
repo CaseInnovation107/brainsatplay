@@ -114,7 +114,7 @@ void main() {
      distortion_noise = 100.0*vec3(0,0,u_noiseCoeff) * cnoise(vec3(position.x/100.0 + u_distortion, position.y/100.0 + u_distortion,position.z/100.0 + u_distortion));
      
      if (u_ambientNoiseToggle == 1){
-        if (effect == 2){
+        if (effect == 2 && sync_scaled < 0.0){
             ambient_noise = 100.0*vec3(0.01,0.01+5.0*sync_scaled,0.01+5.0*sync_scaled) * cnoise(vec3(position.x/100.0 + u_time, position.y/100.0 + u_time, position.z/100.0 + u_time));
         } else{
             ambient_noise = 100.0*vec3(0.01,0.01,0.01) * cnoise(vec3(position.x/100.0 + u_time, position.y/100.0 + u_time, position.z/100.0 + u_time));

@@ -20,8 +20,8 @@ class Brain {
             if (channel >= this.buffer.length){
                 this.buffer.push([])
             }
-    
-            if (channelData != undefined) {
+            
+            if (Array.isArray(channelData) && channelData.length) {
                 if (channelData.length > 0) {
                     this.buffer[channel].push(...channelData);
                     this.times.push(...time);
@@ -30,6 +30,18 @@ class Brain {
         })
 
         // this.trimBufferByTime()
+
+        // Background subtraction
+        //     this.buffer = this.buffer.map((channelData, channel) => {
+        //     let mean = average(channelData);
+        //     if (channelData.length > 1 && channel == 0){
+        //     console.log(channelData.length)
+        //     }
+        //     channelData = channelData.map((val) => {
+        //         return val - mean;
+        //     })
+        //     return channelData
+        // })
         this.trimBufferBySize()
     }
     
