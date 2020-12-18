@@ -4,21 +4,22 @@ from brainsatplay.core import Brain
 import numpy as np
 import asyncio
 
-async def beginStream(BOARD, PORT, URL, USERID):
+async def beginStream(BOARD, PORT, URL, USERID, ACCESS):
 
     # Initialize the Trace
     brain = Brain()
 
     # Connect Websocket + EEG headset through Brainflow
     brain.connect(board=BOARD,port=PORT)
-    await brain.stream(url=URL,userId=USERID)
+    await brain.stream(url=URL,userId=USERID,access=ACCESS)
 
 async def main():
 
     BOARD = 'SYNTHETIC_BOARD' 
-    PORT = None
-    URL = 'http://localhost'
-    USERID = None
+    PORT = None # '/dev/cu.usbserial-DM01N7AE'
+    URL = 'http://localhost' #'https://brainsatplay.azurewebsites.net'
+    USERID = 'bab573fd-d829-46f9-99be-fa71d283cbe6'
+    ACCESS = 'private'
     
                                 # Board Types
                                     # SYNTHETIC_BOARD                          
@@ -35,8 +36,10 @@ async def main():
                                     # None (get a random ID)
                                     # Get ID string from website to view data on the browser
 
+                                # 
 
-    brain = asyncio.create_task(beginStream(BOARD, PORT, URL, USERID))
+
+    brain = asyncio.create_task(beginStream(BOARD, PORT, URL, USERID, ACCESS))
     await brain
 
 if __name__ == "__main__":
