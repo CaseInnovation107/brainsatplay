@@ -52,6 +52,10 @@ USERID = None
   # None (get a random ID)
   # Get ID string from website to view data on the browser
 
+ACCESS = 'public'
+  # Anyone Can Access Data (required to play games): 'public'
+  # Only Interfaces with Same USERID Access Data: 'private'
+
 ```
 6. Begin streaming:
 ```bash
