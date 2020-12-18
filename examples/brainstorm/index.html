@@ -77,7 +77,9 @@
         <div id="bottom-info">
             <div class="info-holder-outer">
                 <h4>States</h4>
+                <div class="under-header-info">
                 <p id="state" class="small">&nbsp;</p>
+                </div>
         <div class="info-holder-inner">
             <div class=icongrid>
             <div class="menuicon" onclick="state = 1">
@@ -98,33 +100,39 @@
 
         <div class="info-holder-outer">
             <h4>Connection Info</h4>
-            <p class="small">&nbsp;</p>
+
+            <div id="access-mode-div" class="under-header-info">
+                <p id="access-mode" class="small">Not Connected</p>
+            </div>
+
             <div class="info-holder-inner">
-                <div class="params">
+                <div id="id-params" class="params" style="display:none">
             <h5>ID</h5>
-            <p id="userId" class="small">Simulation</p>
+            <p id="userId" class="small"></p>
           </div>
 
-          <div class="params">
+          <div id="nBrains-params" class="params" style="display:none">
             <h5>nBrains</h5>
-            <p id="nBrains" class="small">not connected</p>
+            <p id="nBrains" class="small"></p>
         </div>
-        <div class="params">
+        <div id="nInterfaces-params" class="params" style="display:none">
 
         <h5>nInterfaces</h5>
-            <p id="nInterfaces" class="small">not connected</p>
+            <p id="nInterfaces" class="small"></p>
             </div>
-            <div class="params">
+            <div id="connection-toggle" class="params">
                 <button id="connection-button" onclick="toggleConnection();">Enter the Brainstorm</button>
             </div>
             </div>
         </div>
         <div class="info-holder-outer">
             <h4>Effects</h4>
-            <p class="small">&nbsp;</p>
+            <div class="under-header-info">
+                <p id="effect-status" class="small">Off</p>
+            </div>
         <div class="info-holder-inner">
         <div class="params">
-            <button onclick="mouseDistort = !mouseDistort;">Toggle Mouse Distort</button>
+            <button onclick="distortToggle()">Toggle Mouse Distort</button>
         </div>
     </div>
 </div>
@@ -146,7 +154,7 @@
             <p>Use the <strong>States</strong> panel to view different visualizations of brain activity—both individual and collective. Toggle between Signal Types on the right side of the screen.</p>
             <ol>
             <li><p>You start the experience by viewing a synthetic stream of two brains. Under <strong>Connection Info</strong>, press <strong>Enter the Brainstorm</strong> to connect with a network of real users and their brains.</p></li>
-            <li><p>Copy your <strong>ID</strong> to our <a href="https://github.com/brains-at-play/brains-at-play">Python streamer</a> and view your data from OpenBCI or Neurosity headsets.</p></li>
+            <li><p>Copy your <strong>ID</strong> to our <a href="https://github.com/brains-at-play/brains-at-play">Python streamer</a> and send your data using OpenBCI or Neurosity headsets.</p></li>
         </ol>
         </div>
 
@@ -226,7 +234,7 @@
         effect: false,
         signaltype: undefined
     },{
-        name: 'You vs. Group', 
+        name: 'Group Dynamics', 
         shapes: ['brain'],
         type: 'main',
         render: gl.POINTS,
@@ -296,10 +304,6 @@
     let samplerate = 125;
     let generate_interval = Math.round(samplerate*(1/base_freq))
     let count = 0;
-    let distort = false;
-    let distortion = 0;
-    let distortFlag = false;
-    let distortIter = 1;
     let messages = []
     let url;
     if (option  === 'local'){
@@ -332,6 +336,7 @@
     let showUI = true;
     let chat = false;
     let mouseDistort = false;
+    let public = true;
 
     canvas.onmousedown = mouseDown;
     canvas.onmouseup = mouseUp

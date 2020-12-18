@@ -16,9 +16,9 @@ async def beginStream(BOARD, PORT, URL, USERID, ACCESS):
 async def main():
 
     BOARD = 'SYNTHETIC_BOARD' 
-    PORT = None # '/dev/cu.usbserial-DM01N7AE'
-    URL = 'http://localhost' #'https://brainsatplay.azurewebsites.net'
-    USERID = 'bab573fd-d829-46f9-99be-fa71d283cbe6'
+    PORT = None 
+    URL = 'http://localhost' 
+    USERID = None 
     ACCESS = 'private'
     
                                 # Board Types

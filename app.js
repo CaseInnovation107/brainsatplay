@@ -197,47 +197,24 @@ wss.on('connection', function (ws, command, request) {
     }
   }
 
-  // If added user is public or an interface, broadcast their presence
-  let channelNamesArray = []
-  let privateBrains = app.get('private_brains').has(userId)
-  let privateInfo = {};
-  if (privateBrains){
-    privateInfo['id'] = userId 
-    privateInfo['channelNames'] = app.get('private_brains').get(userId).channelNames
-  }
-  let brains = app.get('brains')
-  let keys = Object.keys(Object.fromEntries(brains))
-
-  keys.forEach((key) => {
-    channelNamesArray.push(brains.get(key).channelNames)
-  })
-
-  let initStr = JSON.stringify({
-      msg: 'streaming data into the brainstorm',
-      nBrains: brains.size,
-      privateBrains: privateBrains,
-      privateInfo: privateInfo,
-      nInterfaces: app.get('interfaces').size,
-      ids: keys,
-      channelNames: channelNamesArray,
-      destination: 'init'
-  });
-
-  if (access === 'public' || type === 'interfaces'){
-    ws.send(initStr)
-  } else {
+  if (access === 'private') {
     ws.send(JSON.stringify({
       msg: 'streaming data privately to authenticated interfaces',
       destination: 'init'
-  }))
+    }))
+  } else {
+    ws.send(JSON.stringify({
+      msg: 'streaming data to the brainstorm',
+      destination: 'init'
+    }))
   }
   
-      let str = JSON.stringify({
-        n: +1,
-        id: userId,
-        channelNames: channelNames,
-        destination: type
-      });
+    let str = JSON.stringify({
+      n: +1,
+      id: userId,
+      channelNames: channelNames,
+      destination: type
+    });
 
     app.get('interfaces').forEach(function each(clients, id) {
       clients.connections.forEach(function allClients(client){
@@ -249,9 +226,7 @@ wss.on('connection', function (ws, command, request) {
           }
         // Broadcast private brains to authenticated interfaces only
         } else {
-          console.log('needs authentication')
           if (id == userId){
-            console.log('announcing to you')
             client.send(str);
           }
         }
@@ -261,6 +236,42 @@ wss.on('connection', function (ws, command, request) {
 
     ws.on('message', function (str) {
       let obj = JSON.parse(str);
+
+      if (obj.destination == 'initializeBrains'){
+        
+        // If added user is public or an interface, broadcast their presence
+        let brains = app.get('brains')
+        let channelNamesArray = []
+        let privateBrains = app.get('private_brains').has(userId)
+        let privateInfo = {};
+
+        if (obj.public === false){
+          if (privateBrains){
+            privateInfo['id'] = userId 
+            privateInfo['channelNames'] = app.get('private_brains').get(userId).channelNames
+          }
+        }
+
+        let keys = Object.keys(Object.fromEntries(brains))
+
+        keys.forEach((key) => {
+          channelNamesArray.push(brains.get(key).channelNames)
+        })
+
+        let initStr = JSON.stringify({
+            msg: 'streaming data into the brainstorm',
+            nBrains: brains.size,
+            privateBrains: privateBrains,
+            privateInfo: privateInfo,
+            nInterfaces: app.get('interfaces').size,
+            ids: keys,
+            channelNames: channelNamesArray,
+            destination: 'init'
+        });
+
+        ws.send(initStr)
+      }
+
       if (obj.destination == 'chat'){
         // Broadcast chat messages to all interfaces
         app.get('interfaces').forEach(function each(clients, id) {
@@ -276,7 +287,9 @@ wss.on('connection', function (ws, command, request) {
               "timestamp" : Date.now(),
             }
         )
-      } if (obj.destination == 'bci'){
+      } 
+      
+      if (obj.destination == 'bci'){
         
         // Broadcast brain signals to all interfaces if public
         // (or broadcast only to yourself)

@@ -165,26 +165,13 @@ function switchToChannels(pointCount,users){
 }
 
 function distortToggle(){
-    distort = !distort;
+    mouseDistort = !mouseDistort;
 
-    if (distort) {
-        distortFlag = true;
-        if (distortIter == -1) {
-            distortion = 0;
-        }
-        distortIter = 1;
-    }
-
-    if (!distort) {
-        distortIter =+ visualizations[state].ease * (-distortion);
-    }
-
-    if ( distort ){
-        document.getElementById('distortToggle').innerHTML = "<i class=\"fas fa-pause-circle fa-2x\"></i>\n" +
-            "<p>Undistort Shape</p>"
+    if (mouseDistort){
+        document.getElementById("effect-status").innerHTML = 'on';
     } else {
-        document.getElementById('distortToggle').innerHTML = "<i class=\"fas fa-play-circle fa-2x\"></i>\n" +
-            "<p>Distort Shape</p>"
+        document.getElementById("effect-status").innerHTML = 'off';
+
     }
 }
 
@@ -266,8 +253,7 @@ function stateManager(){
     if (visualizations[state].message != '') {
         document.getElementById('canvas-message').innerHTML = visualizations[state].message;
         document.getElementById('canvas-message').style.opacity = 1;
-    } else if (document.getElementById('canvas-message').style.opacity != 0) {
-        document.getElementById('canvas-message').style.opacity = 0;
+        messageStartTime = Date.now();
     }
 
     // reset z_displacement to zero when not being actively updated
@@ -281,7 +267,7 @@ function stateManager(){
 
 function announcement(message){
     document.getElementById('canvas-message').innerHTML = message;
-    document.getElementById('canvas-message').style.opacity = 1;
+    document.getElementById('canvas-message').style.opacity = 1.0;
     messageStartTime = Date.now();
 }
 
@@ -371,6 +357,16 @@ function toggleChat(){
     }
 }
 
+function toggleAccess(){
+    public = !public;
+    if (public){
+        document.getElementById('access-mode').innerHTML = 'Public Mode'
+        initializeBrains()
+    } else {
+        document.getElementById('access-mode').innerHTML = 'Private Mode'
+        initializeBrains()
+    }
+}
 
 // EEG Coordinates
 function updateEEGChannelsOfInterest(){
@@ -382,8 +378,10 @@ function updateEEGChannelsOfInterest(){
             myBrain = brains.users.get('me')
         }
 
-        if (myBrain.channelNames.includes(name)){
-            eegChannelsOfInterest.push(ind)
+        if (myBrain != undefined){
+            if (myBrain.channelNames.includes(name)){
+                eegChannelsOfInterest.push(ind)
+            }
         }
     })
     return eegChannelsOfInterest

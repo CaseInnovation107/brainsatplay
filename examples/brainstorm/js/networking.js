@@ -1,10 +1,21 @@
 // Connection Management
 function toggleConnection(){
     if (ws == undefined){
-        establishWebsocketConnection();
         document.getElementById("connection-button").innerHTML = 'Exit the Brainstorm';
-        brains.remove('other');
-        brains.remove('me');
+        if (window.innerWidth >= 768) {
+            document.getElementById('id-params').style.display = `block`;
+            document.getElementById('nBrains-params').style.display = `block`;
+            document.getElementById('nInterfaces-params').style.display = `block`;
+        }
+        document.getElementById('access-mode-div').innerHTML = ` 
+        <p id="access-mode" class="small">Public Mode</p>
+        <label id="access-switch" class="switch">
+            <input type="checkbox" onchange="toggleAccess()" checked>
+            <span class="slider round"></span>
+          </label>
+          `
+        establishWebsocketConnection();
+        brains.users.clear();
         brains.add('me');
         stateManager()
         generate = false;
@@ -62,7 +73,10 @@ function initializeWebsocket(){
         announcement('WebSocket error.\n Please refresh your browser and try again.');
     };
 
-    ws.onopen = function () {showMessage('WebSocket connection established')};
+    ws.onopen = function () {
+        showMessage('WebSocket connection established')
+        initializeBrains()
+    };
 
     ws.onmessage = function (msg) {
         let obj = JSON.parse(msg.data);
@@ -77,48 +91,65 @@ function initializeWebsocket(){
 
         } else if (obj.destination == 'init'){
 
-            if (obj.privateBrains){
+            brains.users.clear()
+
+            if (obj.privateBrains && public === false){
                 brains.add(obj.privateInfo.id, obj.privateInfo.channelNames)
+            } else if (public === true){
+                for (newUser = 0; newUser < obj.nBrains; newUser++){
+                    if (brains.users.get(obj.ids[newUser]) == undefined && obj.ids[newUser] != undefined){
+                        brains.add(obj.ids[newUser], obj.channelNames[newUser])
+                    }
+                }
             }
 
-            for (newUser = 0; newUser < obj.nBrains; newUser++){
-                if (brains.users.get(obj.ids[newUser]) == undefined && obj.ids[newUser] != undefined){
-                    brains.add(obj.ids[newUser], obj.channelNames[newUser])
-                }
-            }            
+            if (brains.users.size == 0){
+                brains.add('me');
+            }
+            generate = false;
+            stateManager()
             brains.initializeBuffer(buffer='userVoltageBuffers')
             eegChannelsOfInterest = updateEEGChannelsOfInterest()
 
             nInterfaces = obj.nInterfaces-1;
 
             // Announce number of brains currently online
-            if (obj.nBrains > 0 && brains.users.get('me') != undefined){
-                brains.remove('me')
+
+            if (public === true && (obj.nBrains > 0) && brains.users.get('me') == undefined){
                 announcement(`<div>Welcome to the Brainstorm
                                 <p class="small">${brains.users.size} brains online</p></div>`)
                 document.getElementById('nBrains').innerHTML = `${brains.users.size}`
+            } else if (public === false) {
+                if (obj.privateBrains){
+                    document.getElementById('nBrains').innerHTML = `1`
+                } else {
+                    document.getElementById('nBrains').innerHTML = `0`
+                }
             } else {
                 announcement(`<div>Welcome to the Brainstorm
                                 <p class="small">No brains online</p></div>`)
                 document.getElementById('nBrains').innerHTML = `0`
             }
             document.getElementById('nInterfaces').innerHTML = `${nInterfaces}`
-
         }
+
         else if (obj.destination == 'brains'){
 
-            console.log('getting update of brains', obj.n)
             // let reallocationInd;
             update = obj.n;
-            if (update > 0 && brains.users.get('me') != undefined){
+            if (update > 0 && (brains.users.get('me') != undefined || brains.users.get(userId)!= undefined)){
+            // if (update > 0 && brains.users.get('me') != undefined){
                 brains.remove('me')
             }
-
             if (update == 1){
-                brains.add(obj.id, obj.channelNames)
-                document.getElementById('nBrains').innerHTML = `${brains.users.size}`
-                reallocationInd = brains.users.size - 1
-
+                    if (public){
+                        brains.add(obj.id, obj.channelNames)
+                        document.getElementById('nBrains').innerHTML = `${brains.users.size}`
+                    } else {
+                        brains.add(obj.id, obj.channelNames)
+                        document.getElementById('nBrains').innerHTML = `1`
+                    }
+                    reallocationInd = brains.users.size - 1
             } else if (update == -1){
                 // get index of removed id
                 let iter = 0;
@@ -131,27 +162,34 @@ function initializeWebsocket(){
                 // delete id from map
                 brains.remove(obj.id)
 
-                if (brains.users.size == 0){
-                    announcement('all users left the brainstorm')
+                if (public){
+                    if (brains.users.get('me') == undefined){
+                        if (brains.users.size == 0 ){
+                            announcement('all users left the brainstorm')
+                            document.getElementById('nBrains').innerHTML = `0`
+                            brains.add('me')
+                        } else {
+                            document.getElementById('nBrains').innerHTML = `${brains.users.size}`
+                        }
+                    }
+                } else {
                     document.getElementById('nBrains').innerHTML = `0`
                     brains.add('me')
-                } else {
-                    document.getElementById('nBrains').innerHTML = `${brains.users.size}`
                 }
             }
-
             if (state != 0){
                 stateManager()
                 // brains.reallocateUserBuffers(reallocationInd);
             }
             brains.initializeBuffer(buffer='userVoltageBuffers')
             eegChannelsOfInterest = updateEEGChannelsOfInterest()
-            } else if (obj.destination == 'interfaces'){
-                 nInterfaces += obj.n;
-                document.getElementById('nInterfaces').innerHTML = `${nInterfaces}`
-            }
 
-        else {
+            } 
+            else if (obj.destination == 'interfaces'){
+                    nInterfaces += obj.n;
+                document.getElementById('nInterfaces').innerHTML = `${nInterfaces}`
+            } 
+            else {
             console.log(obj)
         }
     };
@@ -161,14 +199,19 @@ function initializeWebsocket(){
         ws = null;
         announcement(`<div>Exiting the Brainstorm
         <p class="small">Thank you for playing!</p></div>`)
-        document.getElementById('nBrains').innerHTML = `not connected`
-        document.getElementById('nInterfaces').innerHTML = `not connected`
+        if (window.innerWidth >= 768) {
+            document.getElementById('id-params').style.display = `none`;
+            document.getElementById('nBrains-params').style.display = `none`;
+            document.getElementById('nInterfaces-params').style.display = `none`;
+        }
+        document.getElementById('access-mode-div').innerHTML = ` 
+        <p id="access-mode" class="small">Not Connected</p>
+          `
         nInterfaces = undefined;
         document.getElementById("connection-button").innerHTML = 'Enter the Brainstorm'; 
-        document.getElementById('userId').innerHTML = 'Simulation'
         brains = newBrains('me');
         brains.add('other');
-        stateManager()
+        stateManager();
         generate = true;
     };
 }
@@ -189,6 +232,11 @@ function establishWebsocketConnection() {
         }
     });
 }
+
+function initializeBrains(){
+    ws.send(JSON.stringify({'destination':'initializeBrains','public':public}));
+}
+
 
 
 // Cookies
