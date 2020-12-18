@@ -24,8 +24,10 @@ var port = normalizePort(process.env.PORT || '80');
 
 const app = express();
 const brains = new Map();
+const private_brains = new Map();
 const interfaces = new Map();
 app.set('brains', brains);
+app.set('private_brains', private_brains);
 app.set('interfaces', interfaces);
 app.set('example', example);
 
@@ -125,10 +127,12 @@ server.on('upgrade', function (request, socket, head) {
   console.log('Parsing session from request...');
     let userId;
     let type;
+    let access;
 
     if (getCookie(request, 'id') != undefined) {
       userId =  getCookie(request, 'id')
       type = getCookie(request, 'connectionType')
+      access = getCookie(request, 'access')
     } else{
       let protocols = request.headers['sec-websocket-protocol'].split(', ')
       userId =  protocols[0]
@@ -148,7 +152,7 @@ server.on('upgrade', function (request, socket, head) {
       command = 'interfaces'
     } else if (type == 'brains' && app.get('brains').has(userId) == true){
       command = 'close'
-    }else {
+    } else {
       command = 'init'
     }
     wss.handleUpgrade(request, socket, head, function (ws) {
@@ -160,10 +164,12 @@ wss.on('connection', function (ws, command, request) {
   let userId;
   let type;
   let channelNames
+  let access;
 
     if (getCookie(request, 'id') != undefined) {
       userId =  getCookie(request, 'id')
       type = getCookie(request, 'connectionType')
+      access = getCookie(request, 'access')
       channelNames = getCookie(request, 'channelNames')
     } else if (request.headers['sec-websocket-protocol'] != undefined) {
       let protocols = request.headers['sec-websocket-protocol'].split(', ')
@@ -178,16 +184,27 @@ wss.on('connection', function (ws, command, request) {
       ws.send('User already has a brain on the network')
     return
   }
-  else if (command === 'interfaces' || command === 'brains'){
+  else if (command === 'interfaces'){
     mirror_id = app.get(command).get(userId).connections.length
     app.get(command).get(userId).connections.push(ws);
   }
   else if (command === 'init'){ 
     mirror_id = 0;
-    app.get(type).set(userId, {connections: [ws], channelNames: channelNames});
+    if (access === 'public' || type === 'interfaces'){
+      app.get(type).set(userId, {connections: [ws], channelNames: channelNames, access: access});
+    } else {
+      app.get('private_brains').set(userId, {connections: [ws], channelNames: channelNames, access: access});
+    }
   }
 
+  // If added user is public or an interface, broadcast their presence
   let channelNamesArray = []
+  let privateBrains = app.get('private_brains').has(userId)
+  let privateInfo = {};
+  if (privateBrains){
+    privateInfo['id'] = userId 
+    privateInfo['channelNames'] = app.get('private_brains').get(userId).channelNames
+  }
   let brains = app.get('brains')
   let keys = Object.keys(Object.fromEntries(brains))
 
@@ -196,14 +213,24 @@ wss.on('connection', function (ws, command, request) {
   })
 
   let initStr = JSON.stringify({
+      msg: 'streaming data into the brainstorm',
       nBrains: brains.size,
+      privateBrains: privateBrains,
+      privateInfo: privateInfo,
       nInterfaces: app.get('interfaces').size,
       ids: keys,
       channelNames: channelNamesArray,
       destination: 'init'
   });
 
-  ws.send(initStr)
+  if (access === 'public' || type === 'interfaces'){
+    ws.send(initStr)
+  } else {
+    ws.send(JSON.stringify({
+      msg: 'streaming data privately to authenticated interfaces',
+      destination: 'init'
+  }))
+  }
   
       let str = JSON.stringify({
         n: +1,
@@ -212,17 +239,25 @@ wss.on('connection', function (ws, command, request) {
         destination: type
       });
 
-    // Broadcast new number of brains to all interfaces
     app.get('interfaces').forEach(function each(clients, id) {
       clients.connections.forEach(function allClients(client){
-        if (client.id != userId){
         if (client.readyState === WebSocket.OPEN) {
-          client.send(str);
+        // Broadcast new number of brains to all interfaces except yourself
+        if (access === 'public' || type == 'interfaces'){
+          if (client.id != userId){
+              client.send(str);
+          }
+        // Broadcast private brains to authenticated interfaces only
+        } else {
+          console.log('needs authentication')
+          if (id == userId){
+            console.log('announcing to you')
+            client.send(str);
+          }
         }
-      }
+    }
       })
     });
-
 
     ws.on('message', function (str) {
       let obj = JSON.parse(str);
@@ -242,25 +277,35 @@ wss.on('connection', function (ws, command, request) {
             }
         )
       } if (obj.destination == 'bci'){
-        // Broadcast brain signals to all interfaces including yourself
+        
+        // Broadcast brain signals to all interfaces if public
+        // (or broadcast only to yourself)
         app.get('interfaces').forEach(function each(clients, id) {
-          obj.id = userId
-          let str = JSON.stringify(obj)
           clients.connections.forEach(function allClients(client){
-              if (client.readyState === WebSocket.OPEN) {
-                client.send(str);
+            if (client.readyState === WebSocket.OPEN) {
+              if (access === 'public'){
+                  client.send(str);
+              } else {
+                if (id == userId){
+                    client.send(str);
+                }
               }
-            })
-        })
+            }
+          })
+        });
       };
     });
 
     ws.on('close', function () {
 
-      if (app.get(type).get(userId).connections.length == 1){
-        app.get(type).delete(userId);
+      if (access === 'public' || type === 'interfaces'){
+        if (app.get(type).get(userId).connections.length == 1){
+          app.get(type).delete(userId);
+        } else {
+          app.get(type).get(userId).connections.splice(mirror_id,1)
+        }
       } else {
-        app.get(type).get(userId).connections.splice(mirror_id,1)
+        app.get('private_brains').delete(userId);
       }
     
       // Broadcast brains update to all interfacea
@@ -274,7 +319,13 @@ wss.on('connection', function (ws, command, request) {
         app.get('interfaces').forEach(function each(clients, id) {
           clients.connections.forEach(function allClients(client){
             if (client.readyState === WebSocket.OPEN) {
-              client.send(str);
+              if (access === 'public'){
+                  client.send(str);
+              } else {
+                if (id == userId){
+                    client.send(str);
+                }
+              }
             }
           })
         });

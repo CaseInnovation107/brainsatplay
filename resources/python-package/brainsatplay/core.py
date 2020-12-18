@@ -38,7 +38,7 @@ class Brain(object):
     def __str__(self):
         return '{} _ {}'.format(self.id, self.date)
 
-    async def stream(self, url, userId):
+    async def stream(self, url, userId, access):
 
         # Authenticate
         res = self.session.post(url + '/login')
@@ -46,7 +46,8 @@ class Brain(object):
         cookieDict = res.cookies.get_dict()
         cookieDict['connectionType'] = 'brains'
         cookieDict['channelNames'] = self.board.eeg_names
-        
+        cookieDict['access'] = access
+
         # Convert Cookies into Proper Format
         cookies = ""        
         for cookie in cookieDict:
@@ -81,11 +82,11 @@ class Brain(object):
 
             try: 
                 msg = json.loads(msg)
+                print('\n\n' + str(msg['msg']) + '\n\n')
             except:
                 print('\n\nError: ' + msg + '\n\n')
                 return
 
-            print('\n\nStarting to stream into the brainstorm.\n\n')
             self.board.start_stream(num_samples=450000)
             self.start_time = time.time()
             signal.signal(signal.SIGINT, self.stop)
@@ -108,6 +109,7 @@ class Brain(object):
                     
                 message = {
                     'destination': 'bci', 
+                    'id': self.id,
                 'data': {'signal':pass_data,'time':t.tolist()}
                 }
                 message = json.dumps(message, separators=(',', ':'))

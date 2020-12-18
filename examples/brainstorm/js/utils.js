@@ -351,11 +351,11 @@ function toggleDevTools(){
     if (devTools){
         document.getElementById('developer-tools').style.left = '0'
         canvas.width = window.innerWidth - 200
-        document.getElementById('bottom-bar').style.width = `calc(100vw - 200px)`;
+        document.getElementById('bottom-info').style.width = `calc(100vw - 200px)`;
     } else {
         document.getElementById('developer-tools').style.left = '-200px'
         canvas.width = window.innerWidth
-        document.getElementById('bottom-bar').style.width = `100vw`;
+        document.getElementById('bottom-info').style.width = `100vw`;
     }
     document.getElementById('canvas-message').style.width = `${canvas.width}px`;
 }

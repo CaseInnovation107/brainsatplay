@@ -10,12 +10,6 @@ function toggleConnection(){
         generate = false;
     } else {
         ws.close()
-        document.getElementById("connection-button").innerHTML = 'Enter the Brainstorm'; 
-        document.getElementById('userId').innerHTML = 'Simulation'
-        brains = newBrains('me');
-        brains.add('other');
-        stateManager()
-        generate = true;
     }
 }
 
@@ -78,23 +72,24 @@ function initializeWebsocket(){
         else if (obj.destination == 'bci'){
             if (brains.users.get(obj.id) != undefined){
                 brains.users.get(obj.id).streamIntoBuffer(obj.data)
-            }
+            } 
             updateChannels(brains.getMaxChannelNumber())
 
         } else if (obj.destination == 'init'){
+
+            if (obj.privateBrains){
+                brains.add(obj.privateInfo.id, obj.privateInfo.channelNames)
+            }
 
             for (newUser = 0; newUser < obj.nBrains; newUser++){
                 if (brains.users.get(obj.ids[newUser]) == undefined && obj.ids[newUser] != undefined){
                     brains.add(obj.ids[newUser], obj.channelNames[newUser])
                 }
-            }
-            
+            }            
             brains.initializeBuffer(buffer='userVoltageBuffers')
             eegChannelsOfInterest = updateEEGChannelsOfInterest()
 
             nInterfaces = obj.nInterfaces-1;
-            console.log('initializing', nInterfaces)
-
 
             // Announce number of brains currently online
             if (obj.nBrains > 0 && brains.users.get('me') != undefined){
@@ -112,6 +107,7 @@ function initializeWebsocket(){
         }
         else if (obj.destination == 'brains'){
 
+            console.log('getting update of brains', obj.n)
             // let reallocationInd;
             update = obj.n;
             if (update > 0 && brains.users.get('me') != undefined){
@@ -119,7 +115,6 @@ function initializeWebsocket(){
             }
 
             if (update == 1){
-                console.log(obj.channelNames)
                 brains.add(obj.id, obj.channelNames)
                 document.getElementById('nBrains').innerHTML = `${brains.users.size}`
                 reallocationInd = brains.users.size - 1
@@ -152,7 +147,6 @@ function initializeWebsocket(){
             brains.initializeBuffer(buffer='userVoltageBuffers')
             eegChannelsOfInterest = updateEEGChannelsOfInterest()
             } else if (obj.destination == 'interfaces'){
-                console.log('updating', obj.n)
                  nInterfaces += obj.n;
                 document.getElementById('nInterfaces').innerHTML = `${nInterfaces}`
             }
@@ -170,6 +164,12 @@ function initializeWebsocket(){
         document.getElementById('nBrains').innerHTML = `not connected`
         document.getElementById('nInterfaces').innerHTML = `not connected`
         nInterfaces = undefined;
+        document.getElementById("connection-button").innerHTML = 'Enter the Brainstorm'; 
+        document.getElementById('userId').innerHTML = 'Simulation'
+        brains = newBrains('me');
+        brains.add('other');
+        stateManager()
+        generate = true;
     };
 }
 

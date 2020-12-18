@@ -75,9 +75,19 @@ function keyboardShortcuts(ev){
                 }
         } 
         // Key "i" opens developer tools
-        // else if (ev.keyCode == '73'){
-        //     console.log('debugging')
-        //     debugFlag != debugFlag;
-        // } 
+        else if (ev.keyCode == '73'){
+           toggleDevTools()
+        } 
     }
+}
+
+
+function toggleUI(){
+    showUI = !showUI;
+
+    if (showUI){
+        document.getElementById('ui-elements').style.display = 'block'
+        } else {
+            document.getElementById('ui-elements').style.display = 'none'
+        }
 }
