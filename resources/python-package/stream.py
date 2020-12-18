@@ -36,7 +36,9 @@ async def main():
                                     # None (get a random ID)
                                     # Get ID string from website to view data on the browser
 
-                                # 
+                                # Access Types
+                                    # Private (only you can see this data)
+                                    # Public (anyone connected to the brainstorm can see this data)
 
 
     brain = asyncio.create_task(beginStream(BOARD, PORT, URL, USERID, ACCESS))

@@ -1,7 +1,7 @@
 // Connection Management
 function toggleConnection(){
     if (ws == undefined){
-        document.getElementById("connection-button").innerHTML = 'Exit the Brainstorm';
+        document.getElementById("connection-button").innerHTML = 'Disconnect';
         if (window.innerWidth >= 768) {
             document.getElementById('id-params').style.display = `block`;
             document.getElementById('nBrains-params').style.display = `block`;
@@ -208,7 +208,7 @@ function initializeWebsocket(){
         <p id="access-mode" class="small">Not Connected</p>
           `
         nInterfaces = undefined;
-        document.getElementById("connection-button").innerHTML = 'Enter the Brainstorm'; 
+        document.getElementById("connection-button").innerHTML = 'Connect'; 
         brains = newBrains('me');
         brains.add('other');
         stateManager();

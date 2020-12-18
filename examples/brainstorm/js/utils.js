@@ -237,8 +237,8 @@ function stateManager(){
     if (!shapes.includes('brain') && !shapes.includes('channels')){
         vertexHome = createPointCloud(visualizations[state].shapes, Math.round(pointCount/shapes.length));
         ease = true;
-        rotation = true;
-        zoom = true;
+        rotation = false;
+        zoom = false;
     }
 
     if (!rotation){
@@ -250,10 +250,13 @@ function stateManager(){
     document.getElementById('state').innerHTML = `${visualizations[state].name}`
     document.getElementById('signal-type').innerHTML = `${visualizations[state].signaltype}`
 
+    // Change UI
     if (visualizations[state].message != '') {
-        document.getElementById('canvas-message').innerHTML = visualizations[state].message;
-        document.getElementById('canvas-message').style.opacity = 1;
-        messageStartTime = Date.now();
+        announcement(visualizations[state].message)
+    }
+    
+    if (showUI && visualizations[state].type != 'intro'){
+        document.getElementById('ui-elements').style.opacity = '1.0'
     }
 
     // reset z_displacement to zero when not being actively updated

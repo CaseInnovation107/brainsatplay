@@ -121,7 +121,7 @@
             <p id="nInterfaces" class="small"></p>
             </div>
             <div id="connection-toggle" class="params">
-                <button id="connection-button" onclick="toggleConnection();">Enter the Brainstorm</button>
+                <button id="connection-button" onclick="toggleConnection();">Connect</button>
             </div>
             </div>
         </div>
@@ -188,13 +188,14 @@
     let GENERIC_ZOOM = max([1e5/window.innerWidth,1e5/window.innerHeight])*2
     let effects = [false, 'projection','synchrony','scan'] // Order used in Shaders.js code
 
-    let visualizations = [{
+    let visualizations = [
+        {
         name: 'Scan Phase', 
         shapes: ['sphereShells'], // shape of points
         render: gl.POINTS,
         type: 'intro',
         timer: 5.0, // display time in seconds; false has no animation
-        message: 'scanning...',
+        message: ``,
         ease: 0.1,
         zoom: GENERIC_ZOOM,
         effect: 'scan',
