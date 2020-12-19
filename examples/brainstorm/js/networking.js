@@ -44,8 +44,6 @@ async function login(type='guest'){
         formDict.guestaccess = false
     }
 
-    console.log(formDict)
-
         let resDict = await clientAction('login','POST', formDict);
         if (resDict.result == 'OK'){
             userId = resDict.msg;
@@ -204,14 +202,13 @@ function initializeWebsocket(){
             // let reallocationInd;
             update = obj.n;
             if (update > 0 && (brains.users.get('me') != undefined || brains.users.get(userId)!= undefined)){
-            // if (update > 0 && brains.users.get('me') != undefined){
                 brains.remove('me')
             }
             if (update == 1){
-                    if (public){
+                    if (public && obj.access === 'public'){
                         brains.add(obj.id, obj.channelNames)
                         document.getElementById('nBrains').innerHTML = `${brains.users.size}`
-                    } else {
+                    } else if (!public && obj.access === 'private') {
                         brains.add(obj.id, obj.channelNames)
                         document.getElementById('nBrains').innerHTML = `1`
                     }
@@ -228,13 +225,13 @@ function initializeWebsocket(){
                 // delete id from map
                 brains.remove(obj.id)
 
-                if (public){
+                if (public && obj.access === 'public'){
                     if (brains.users.get('me') == undefined){
-                        if (brains.users.size == 0 ){
+                        if (brains.users.size == 0){
                             announcement('all users left the brainstorm')
                             document.getElementById('nBrains').innerHTML = `0`
                             brains.add('me')
-                        } else {
+                        } else if (!public && obj.access === 'private'){
                             document.getElementById('nBrains').innerHTML = `${brains.users.size}`
                         }
                     }

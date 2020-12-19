@@ -212,6 +212,7 @@ wss.on('connection', function (ws, command, request) {
     let str = JSON.stringify({
       n: +1,
       id: userId,
+      access: access,
       channelNames: channelNames,
       destination: type
     });
