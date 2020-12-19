@@ -39,7 +39,7 @@ BOARD = 'SYNTHETIC_BOARD'
   # OpenBCI Board: 'CYTON_DAISY_BOARD'
   # Neurosity Boards: 'NOTION_1_BOARD' or 'NOTION_2_BOARD'
 
-PORT = 'None' 
+PORT = None
   # Synthetic Stream: None
   # Mac: '/dev/cu.usbserial-________'
   # Windows: 'COM_'
@@ -48,9 +48,12 @@ URL = 'http://localhost'
   # Local: 'http://localhost'
   # Deployed Game: 'https://brainsatplay.azurewebsites.net'
 
-USERID = None
-  # None (get a random ID)
-  # Get ID string from website to view data on the browser
+LOGIN_DATA = {
+        'guestaccess': True, 
+        'guestId': '********' 
+    }
+  # Guests: { 'guestaccess': True, 'guestId': '********'}
+  # Authenticated Users: { 'username': '********', 'password': '********' }
 
 ACCESS = 'public'
   # Anyone Can Access Data (required to play games): 'public'

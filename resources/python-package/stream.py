@@ -16,30 +16,29 @@ async def beginStream(BOARD, PORT, URL, LOGIN_DATA, ACCESS):
 async def main():
 
     BOARD = 'SYNTHETIC_BOARD' 
-    PORT = None 
-    URL = 'http://localhost' 
-    LOGIN_DATA = {'guestaccess': True, 'guestId': 'garrettmflynn'} # {'username': '********', 'password': '********'}
+    # Synthetic Stream: 'SYNTHETIC_BOARD'
+    # OpenBCI Board: 'CYTON_DAISY_BOARD'
+    # Neurosity Boards: 'NOTION_1_BOARD' or 'NOTION_2_BOARD'
+
+    PORT = None
+    # Synthetic Stream: None
+    # Mac: '/dev/cu.usbserial-________'
+    # Windows: 'COM_'
+                    
+    URL = 'http://localhost'
+    # Local: 'http://localhost'
+    # Deployed Game: 'https://brainsatplay.azurewebsites.net'
+
+    LOGIN_DATA = {
+            'guestaccess': True, 
+            'guestId': '********' 
+        }
+    # Guests: { 'guestaccess': True, 'guestId': '********'}
+    # Authenticated Users: { 'username': '********', 'password': '********' }
+
     ACCESS = 'public'
-    
-                                # Board Types
-                                    # SYNTHETIC_BOARD                          
-                                    # CYTON_DAISY_BOARD
-                                    # NOTION_1_BOARD
-                                    # NOTION_2_BOARD
-
-                                # Port Syntax (required for CYTON_DAISY_BOARD only)
-                                    # Mac Style: '/dev/cu.usbserial-DM01N7AE'
-                                    # Windows Style: 'COM4'
-                                    # Synthetic: None
-
-                                # ID Styles
-                                    # None (get a random ID)
-                                    # Get ID string from website to view data on the browser
-
-                                # Access Types
-                                    # Private (only you can see this data)
-                                    # Public (anyone connected to the brainstorm can see this data)
-
+    # Anyone Can Access Data (required to play games): 'public'
+    # Only Interfaces with Same USERID Access Data: 'private'
 
     brain = asyncio.create_task(beginStream(BOARD, PORT, URL, LOGIN_DATA, ACCESS))
     await brain
