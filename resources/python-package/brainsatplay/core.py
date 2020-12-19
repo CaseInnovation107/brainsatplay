@@ -38,92 +38,93 @@ class Brain(object):
     def __str__(self):
         return '{} _ {}'.format(self.id, self.date)
 
-    async def stream(self, url, userId, access):
+    async def stream(self, url, login_data, access):
 
         # Authenticate
-        res = self.session.post(url + '/login')
+        res = self.session.post(url + '/login', login_data)
+        res = json.loads(res.content)
 
-        cookieDict = res.cookies.get_dict()
-        cookieDict['connectionType'] = 'brains'
-        cookieDict['channelNames'] = self.board.eeg_names
-        cookieDict['access'] = access
-
-        # Convert Cookies into Proper Format
-        cookies = ""        
-        for cookie in cookieDict:
-            if (cookie == 'id'):
-                if (userId != None):
-                    cookieDict[cookie] = userId
-                self.id = cookieDict[cookie]
-
-            if isinstance(cookieDict[cookie],list):
-                cookie_in_progress = str(cookie + '=')
-                for ind,val in enumerate(cookieDict[cookie]):
-                    cookie_in_progress += str(val)
-                    if (ind != len(cookieDict[cookie])-1):
-                         cookie_in_progress +=  ','
-                    else:
-                        cookies += cookie_in_progress + '; '
-            else:
-                cookies += str(cookie + '=' + cookieDict[cookie] + '; ')
-            
-        # Add connectionType Cookie
-        o = urlparse(url)
-        if (o.scheme == 'http'):
-            uri = "ws://" + o.netloc
-        elif (o.scheme == 'https'):
-            uri = "wss://" + o.netloc
+        if res['result'] != 'OK':
+            print('\n\n' + res['msg'] + '\n\n')
         else:
-            print('not a valid url scheme')
+            cookieDict = {}
+            cookieDict['connectionType'] = 'brains'
+            cookieDict['channelNames'] = self.board.eeg_names
+            cookieDict['access'] = access
+            self.id = res['msg']
+            cookieDict['id'] = self.id
 
-        async with websockets.connect(uri,ping_interval=None, extra_headers=[('cookie', cookies)]) as websocket:
-            
-            msg = await websocket.recv()
-
-            try: 
-                msg = json.loads(msg)
-                print('\n\n' + str(msg['msg']) + '\n\n')
-            except:
-                print('\n\nError: ' + msg + '\n\n')
-                return
-
-            self.board.start_stream(num_samples=450000)
-            self.start_time = time.time()
-            signal.signal(signal.SIGINT, self.stop)
-
-            while True:
-
-                # Get Data
-                pass_data = []
-                rate = DataFilter.get_nearest_power_of_two(self.board.rate)
-                data = self.board.get_board_data()
-                t = data[self.board.time_channel]
-
-                if self.all_channels:
-                    data = data[self.board.eeg_channels] 
+            # Convert Cookies into Proper Format
+            cookies = ""        
+            for cookie in cookieDict:
+                if isinstance(cookieDict[cookie],list):
+                    cookie_in_progress = str(cookie + '=')
+                    for ind,val in enumerate(cookieDict[cookie]):
+                        cookie_in_progress += str(val)
+                        if (ind != len(cookieDict[cookie])-1):
+                            cookie_in_progress +=  ','
+                        else:
+                            cookies += cookie_in_progress + '; '
                 else:
-                    data = data[self.board.eeg_channels][self.channels]
+                    cookies += str(cookie + '=' + cookieDict[cookie] + '; ')
+                
+            # Add connectionType Cookie
+            o = urlparse(url)
+            if (o.scheme == 'http'):
+                uri = "ws://" + o.netloc
+            elif (o.scheme == 'https'):
+                uri = "wss://" + o.netloc
+            else:
+                print('not a valid url scheme')
 
-                for entry in data:
-                    pass_data.append((entry).tolist())
+            async with websockets.connect(uri,ping_interval=None, extra_headers=[('cookie', cookies)]) as websocket:
+                
+                msg = await websocket.recv()
+
+                try: 
+                    msg = json.loads(msg)
+                    print('\n\n' + str(msg['msg']) + '\n\n')
+                except:
+                    print('\n\nError: ' + msg + '\n\n')
+                    return
+
+                self.board.start_stream(num_samples=450000)
+                self.start_time = time.time()
+                signal.signal(signal.SIGINT, self.stop)
+
+                while True:
+
+                    # Get Data
+                    pass_data = []
+                    rate = DataFilter.get_nearest_power_of_two(self.board.rate)
+                    data = self.board.get_board_data()
+                    t = data[self.board.time_channel]
+
+                    if self.all_channels:
+                        data = data[self.board.eeg_channels] 
+                    else:
+                        data = data[self.board.eeg_channels][self.channels]
+
+                    for entry in data:
+                        pass_data.append((entry).tolist())
+                        
+                    message = {
+                        'destination': 'bci', 
+                        'id': self.id,
+                    'data': {'signal':pass_data,'time':t.tolist()}
+                    }
+                    message = json.dumps(message, separators=(',', ':'))
                     
-                message = {
-                    'destination': 'bci', 
-                    'id': self.id,
-                'data': {'signal':pass_data,'time':t.tolist()}
-                }
-                message = json.dumps(message, separators=(',', ':'))
-                
-                
-                # (Re)Open Websocket Connection
-                if not websocket.open:
-                    try:
-                        print('Websocket is NOT connected. Reconnecting...')
-                        websocket = await websockets.connect(uri,ping_interval=None, extra_headers=[('cookie', cookies)])
-                    except:
-                        print('Unable to reconnect, trying again.')
+                    
+                    # (Re)Open Websocket Connection
+                    if not websocket.open:
+                        try:
+                            print('Websocket is NOT connected. Reconnecting...')
+                            websocket = await websockets.connect(uri,ping_interval=None, extra_headers=[('cookie', cookies)])
+                        except:
+                            print('Unable to reconnect, trying again.')
 
-                await websocket.send(message)
+                    await websocket.send(message)
 
 
     def connect(self, board='SYNTHETIC_BOARD', port = None):

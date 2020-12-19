@@ -181,7 +181,7 @@ wss.on('connection', function (ws, command, request) {
 
   let mirror_id;
   if (command === 'close'){
-      ws.send('User already has a brain on the network')
+      ws.send(userId + ' is already has a brain on the network')
     return
   }
   else if (command === 'interfaces'){
@@ -199,12 +199,12 @@ wss.on('connection', function (ws, command, request) {
 
   if (access === 'private') {
     ws.send(JSON.stringify({
-      msg: 'streaming data privately to authenticated interfaces',
+      msg: "streaming data privately to " + userId + "'s interfaces",
       destination: 'init'
     }))
   } else {
     ws.send(JSON.stringify({
-      msg: 'streaming data to the brainstorm',
+      msg: "streaming " + userId + "'s data to the brainstorm",
       destination: 'init'
     }))
   }
