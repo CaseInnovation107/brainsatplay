@@ -44,6 +44,8 @@ async function login(type='guest'){
         formDict.guestaccess = false
     }
 
+    console.log(formDict)
+
         let resDict = await clientAction('login','POST', formDict);
         if (resDict.result == 'OK'){
             userId = resDict.msg;

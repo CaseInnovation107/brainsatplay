@@ -22,7 +22,7 @@ module.exports.attemptLogin = async (req, res) => {
     let correct_pass 
     let msg;
     
-    if (guestaccess != undefined && ![true, 'true'].includes(guestaccess.toLowerCase())){
+    if (guestaccess !== true && !['true','True'].includes(guestaccess)){
     if (username != undefined && password != undefined) {
       await db.collection('profiles').find({ username: username }).forEach(doc => {correct_pass = doc.password});
       if (correct_pass == undefined){
