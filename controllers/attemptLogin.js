@@ -16,12 +16,14 @@ module.exports.attemptLogin = async (req, res) => {
     let username = req.body.username
     let password = req.body.password
     let guestaccess = req.body.guestaccess
+    let guestId = req.body.guestId
+    let client = req.app.get('mongo_client')
+    const db = client.db(dbName);
+    let correct_pass 
     let msg;
+    
     if (guestaccess != undefined && ![true, 'true'].includes(guestaccess.toLowerCase())){
     if (username != undefined && password != undefined) {
-      let client = req.app.get('mongo_client')
-      const db = client.db(dbName);
-      let correct_pass 
       await db.collection('profiles').find({ username: username }).forEach(doc => {correct_pass = doc.password});
       if (correct_pass == undefined){
         msg = 'no profile exists with this username. please try again.'
@@ -38,7 +40,16 @@ module.exports.attemptLogin = async (req, res) => {
       res.send({ result: 'incomplete', msg: 'username/password not defined' })
     }
   } else {
-      msg = uuid.v4();
-      res.send({ result: 'OK', msg: msg });
+      if (guestId != undefined){
+        let numDocs = await db.collection('profiles').find({ username: guestId }).count();
+        if (numDocs == 0){
+          res.send({ result: 'OK', msg: guestId });
+        } else {
+          res.send({ result: 'incomplete', msg: 'profile exists with this username. please choose a different guest ID.' });
+        }
+      } else {
+        msg = uuid.v4();
+        res.send({ result: 'OK', msg: msg });
+      }
   }
 }

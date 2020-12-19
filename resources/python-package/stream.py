@@ -18,7 +18,7 @@ async def main():
     BOARD = 'SYNTHETIC_BOARD' 
     PORT = None 
     URL = 'http://localhost' 
-    LOGIN_DATA = {'guestaccess': False} # {'username': '********', 'password': '********'}
+    LOGIN_DATA = {'guestaccess': True, 'guestId': 'garrettmflynn'} # {'username': '********', 'password': '********'}
     ACCESS = 'public'
     
                                 # Board Types
