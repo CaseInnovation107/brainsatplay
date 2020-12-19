@@ -1,5 +1,3 @@
-var bodyParser = require('body-parser');
-
 //I used an mlab Sandbox DB. Substitute the details with your own
 const url = "mongodb+srv://default-user:JgMmIChJd7IoyOJY@cluster0.bdgxr.mongodb.net/brains-and-games?retryWrites=true&w=majority";
 const dbName = "brains-and-games";
@@ -8,7 +6,7 @@ module.exports.getSubmissions = async (req, res) => {
   //Accepting user input directly is very insecure and should 
   //never be allowed in a production app. Sanitize the input.
 
-    client = req.app.get('mongo_client')
+    let client = req.app.get('mongo_client')
     const db = client.db(dbName);
     let request = Object.keys(req.body)[0]
     var submissionJSON = {};

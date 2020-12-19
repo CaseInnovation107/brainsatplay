@@ -7,19 +7,34 @@ function getCookie(req,name) {
   if (parts.length === 2) return parts.pop().split(';').shift();
 }
 
+const url = "mongodb+srv://default-user:JgMmIChJd7IoyOJY@cluster0.bdgxr.mongodb.net/brains-and-games?retryWrites=true&w=majority";
+const dbName = "brainsatplay";
+
 module.exports.attemptLogin = async (req, res) => {
-    //
-    // "Log in" user and set userId to session.
-    let cookie = getCookie(req,'id')
+  
+    // let cookie = getCookie(req,'id')
 
-    if (cookie === undefined) {
-      const id = uuid.v4();
-      res.cookie('id',id, { maxAge: 30*24*60*60*1000, httpOnly: true });
-      cookie = id;
-    } else {
-      console.log(`Updating session for user ${cookie}`);
-    }
+    let username = req.body.username
+    let password = req.body.password
+    let guestaccess = req.body.guestaccess
+    let msg;
 
-
-    res.send({ result: 'OK', userId: cookie });
-  };
+    if (guestaccess != true){
+    if (username != undefined && password != undefined) {
+      let client = req.app.get('mongo_client')
+      const db = client.db(dbName);
+      let correct_pass 
+      await db.collection('profiles').find({ username: username }).forEach(doc => {correct_pass = doc.password});
+      if (correct_pass === password){
+        msg = username
+        res.send({ result: 'OK', msg: msg });
+      } else {
+        msg = 'no profile exists with this username. please try again.'
+        res.send({ result: 'incomplete', msg: msg });
+      }
+    } 
+  } else {
+      msg = uuid.v4();
+      res.send({ result: 'OK', msg: msg });
+  }
+}
