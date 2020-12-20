@@ -70,9 +70,9 @@ function keyboardShortcuts(ev){
         } 
 
         // Key "i" opens developer tools
-        if (ev.keyCode == '73'){
-           toggleDevTools()
-        } 
+        // if (ev.keyCode == '73'){
+        //    toggleDevTools()
+        // } 
     }
 }
 
