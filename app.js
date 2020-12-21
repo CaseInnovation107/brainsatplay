@@ -150,7 +150,7 @@ server.on('upgrade', function (request, socket, head) {
 
     if (app.get('interfaces').has(userId) == true && type == 'interfaces') {
       command = 'interfaces'
-    } else if (type == 'brains' && app.get('brains').has(userId) == true){
+    } else if (type == 'brains' && ((access=="public" && app.get('brains').has(userId) == true) || (access=="private" && app.get('private_brains').has(userId) == true))){
       command = 'close'
     } else {
       command = 'init'
@@ -327,13 +327,14 @@ wss.on('connection', function (ws, command, request) {
         let str = JSON.stringify({
           n: -1,
           id: userId,
+          access: access,
           destination: type
         });
 
         app.get('interfaces').forEach(function each(clients, id) {
           clients.connections.forEach(function allClients(client){
             if (client.readyState === WebSocket.OPEN) {
-              if (access === 'public'){
+              if (access === 'public' || access === undefined){
                   client.send(str);
               } else {
                 if (id == userId){

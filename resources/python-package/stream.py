@@ -29,7 +29,7 @@ async def main():
     # Local: 'http://localhost'
     # Deployed Game: 'https://brainsatplay.azurewebsites.net'
 
-    LOGIN_DATA = { 'guestaccess': True, 'guestId': '********'}
+    LOGIN_DATA = { 'guestaccess': True }
     # Guests: { 'guestaccess': True, 'guestId': '********'}
     # Authenticated Users: { 'username': '********', 'password': '********' }
 

@@ -59,16 +59,16 @@ function keyboardShortcuts(ev){
         // } else if (ev.keyCode == '40') {
         // } 
 
-        // if (ev.keyCode == '39' || ev.keyCode == '37') {
+        if (ev.keyCode == '39' || ev.keyCode == '37') {
 
-        //         if (ev.keyCode == '39' && state < (visualizations.length-1))
-        //         {
-        //             state += 1
-        //         }
-        //         else if (ev.keyCode == '37' && visualizations[state-1].type != 'intro') {
-        //             state -= 1
-        //         }
-        // } 
+                if (ev.keyCode == '39' && state < (scenes.length-1))
+                {
+                    state += 1
+                }
+                else if (ev.keyCode == '37' && scenes[state-1].type != 'intro') {
+                    state -= 1
+                }
+        } 
 
         // Key "i" opens developer tools
         // if (ev.keyCode == '73'){
