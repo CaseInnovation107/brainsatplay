@@ -1,9 +1,8 @@
 // Connection Management
 function toggleConnection(){
 
-
-    if (ws == undefined){
-        if (userId == undefined) {
+    if (brains.connection == undefined){
+        if (['me'].includes(brains.username)){
             toggleLoginScreen();
         } else {
         document.getElementById("connection-button").innerHTML = 'Disconnect';
@@ -19,14 +18,10 @@ function toggleConnection(){
             <span class="slider round"></span>
           </label>
           `
-        initializeWebsocket();
-        brains.users.clear();
-        generate = false;
-        state = 3;
+        brains.connect(url)
     }
     } else {
-        ws.close()
-        userId = undefined;
+        brains.connection.close()
         state = 1;
     }
 }
@@ -44,10 +39,10 @@ async function login(type='guest'){
         formDict.guestaccess = false
     }
 
-        let resDict = await clientAction('login','POST', formDict);
+    let resDict = await clientAction('login','POST', formDict);
         if (resDict.result == 'OK'){
-            userId = resDict.msg;
-            document.getElementById('userId').innerHTML = userId
+            brains.username = resDict.msg;
+            document.getElementById('userId').innerHTML = brains.username
             form.reset()
             toggleLoginScreen();
             toggleConnection();
@@ -114,192 +109,6 @@ function handleResponse(res) {
 function showMessage(message) {
     console.log(`\n${message}`);
 }
-
-// Websockets
-
-function initializeWebsocket(){
-    if (ws) {
-        ws.onerror = ws.onopen = ws.onclose = null;
-        ws.close();
-    }
-
-    if (url.protocol == 'http:'){
-    ws = new WebSocket(`ws://` + url.hostname,[userId, 'interfaces']);
-    } else if (url.protocol == 'https:'){
-        ws = new WebSocket(`wss://` + url.hostname,[userId, 'interfaces']);
-    } else{
-        console.log('invalid protocol')
-        return
-    }
-
-    ws.onerror = function () {
-        showMessage('WebSocket error');
-        announcement('WebSocket error.\n Please refresh your browser and try again.');
-    };
-
-    ws.onopen = function () {
-        showMessage('WebSocket connection established')
-        initializeBrains()
-    };
-
-    ws.onmessage = function (msg) {
-        let obj = JSON.parse(msg.data);
-        if (obj.destination == 'chat'){
-            $('#messages').append($('<li>').text(obj.msg));
-        }
-        else if (obj.destination == 'bci'){
-            if (brains.users.get(obj.id) != undefined){
-                brains.users.get(obj.id).streamIntoBuffer(obj.data)
-            } 
-            updateChannels(brains.getMaxChannelNumber())
-
-        } else if (obj.destination == 'init'){
-
-            brains.users.clear()
-
-            if (obj.privateBrains && public === false){
-                brains.add(obj.privateInfo.id, obj.privateInfo.channelNames)
-            } else {
-                for (newUser = 0; newUser < obj.nBrains; newUser++){
-                    if (brains.users.get(obj.ids[newUser]) == undefined && obj.ids[newUser] != undefined){
-                        if (public){
-                            brains.add(obj.ids[newUser], obj.channelNames[newUser])
-                        } else {
-                            if (obj.ids[newUser] == userId){
-                                brains.add(obj.ids[newUser], obj.channelNames[newUser])
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (brains.users.size == 0){
-                brains.add('me');
-            }
-
-            generate = false;
-            stateManager(forceUpdate=true)
-            brains.updateEEGChannelsOfInterest()
-            brains.initializeBuffer(buffer='userVoltageBuffers')
-
-            nInterfaces = obj.nInterfaces;
-
-            // Announce number of brains currently online
-
-            if (public === true && (obj.nBrains > 0) && brains.users.get('me') == undefined){
-                announcement(`<div>Welcome to the Brainstorm
-                                <p class="small">${brains.users.size} brains online</p></div>`)
-                document.getElementById('nBrains').innerHTML = `${brains.users.size}`
-            } else if (public === false) {
-                if (obj.privateBrains){
-                    document.getElementById('nBrains').innerHTML = `1`
-                } else {
-                    if (brains.users.has("me")){
-                        document.getElementById('nBrains').innerHTML = `0`
-                    } else {
-                        document.getElementById('nBrains').innerHTML = `${brains.users.size}`
-                    }
-                }
-            } else {
-                announcement(`<div>Welcome to the Brainstorm
-                                <p class="small">No brains online</p></div>`)
-                document.getElementById('nBrains').innerHTML = `0`
-            }
-            if (public === false) {
-                document.getElementById('nInterfaces').innerHTML = `1`
-            } else {
-                document.getElementById('nInterfaces').innerHTML = `${nInterfaces}`
-            }
-        }
-
-        else if (obj.destination == 'brains'){
-
-            // let reallocationInd;
-            update = obj.n;
-
-            // Only update if access matches
-            if ((public) || (!public && obj.access === 'private')){
-                if (update == 1){
-                        if (public){
-                            document.getElementById('nBrains').innerHTML = `${brains.users.size + 1}`
-                            brains.add(obj.id, obj.channelNames)
-                            brains.remove('me')
-                        } else if (!public && obj.access === 'private') {
-                            brains.add(obj.id, obj.channelNames)
-                            document.getElementById('nBrains').innerHTML = `1`
-                            brains.remove('me')
-                        }
-                        reallocationInd = brains.users.size - 1
-                } else if (update == -1){
-                    // get index of removed id
-                    let iter = 0;
-                    brains.users.forEach((key) =>{
-                        if (key == obj.id){
-                            reallocationInd = iter
-                        }
-                        iter++
-                    })
-
-                    if (public){
-                        if (brains.users.size == 0){
-                            announcement('all users left the brainstorm')
-                            document.getElementById('nBrains').innerHTML = `0`
-                            brains.add('me')
-                        } else {
-                            document.getElementById('nBrains').innerHTML = `${brains.users.size-1}`
-                        }
-                    } else if (!public && obj.access === 'private'){
-                        document.getElementById('nBrains').innerHTML = `0`
-                        brains.add('me')
-                    }
-
-                    // delete id from map
-                    brains.remove(obj.id)
-                }
-                
-                if (state != 0){
-                    stateManager(forceUpdate=true)
-                    // brains.reallocateUserBuffers(reallocationInd);
-                }
-                brains.initializeBuffer(buffer='userVoltageBuffers')
-                brains.updateEEGChannelsOfInterest()
-            }
-            } 
-            else if (obj.destination == 'interfaces'){
-                nInterfaces += obj.n;
-                document.getElementById('nInterfaces').innerHTML = `${nInterfaces}`
-            } 
-            else {
-            console.log(obj)
-        }
-    };
-
-    ws.onclose = function () {
-        showMessage('WebSocket connection closed');
-        ws = null;
-        announcement(`<div>Exiting the Brainstorm
-        <p class="small">Thank you for playing!</p></div>`)
-        if (window.innerWidth >= 768) {
-            document.getElementById('id-params').style.display = `none`;
-            document.getElementById('nBrains-params').style.display = `none`;
-            document.getElementById('nInterfaces-params').style.display = `none`;
-        }
-        document.getElementById('access-mode-div').innerHTML = ` 
-        <p id="access-mode" class="small">Not Connected</p>
-          `
-        nInterfaces = undefined;
-        document.getElementById("connection-button").innerHTML = 'Connect'; 
-        brains.simulate()
-        stateManager(forceUpdate=true)
-        generate = true;
-    };
-}
-
-function initializeBrains(){
-    ws.send(JSON.stringify({'destination':'initializeBrains','public':public}));
-}
-
-
 
 // Cookies
 function setCookie(name,value,days) {

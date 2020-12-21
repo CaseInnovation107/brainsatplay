@@ -138,8 +138,7 @@ server.on('upgrade', function (request, socket, head) {
       userId =  protocols[0]
       type = protocols[1]
     }
-
-
+    
     if (!userId) {
       socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
       socket.destroy();
@@ -151,16 +150,18 @@ server.on('upgrade', function (request, socket, head) {
     if (app.get('interfaces').has(userId) == true && type == 'interfaces') {
       command = 'interfaces'
     } else if (type == 'brains' && ((access=="public" && app.get('brains').has(userId) == true) || (access=="private" && app.get('private_brains').has(userId) == true))){
-      command = 'close'
+      command = 'close' 
     } else {
       command = 'init'
     }
+
     wss.handleUpgrade(request, socket, head, function (ws) {
       wss.emit('connection', ws, command, request);
     });
 });
 
 wss.on('connection', function (ws, command, request) {
+
   let userId;
   let type;
   let channelNames
@@ -221,7 +222,7 @@ wss.on('connection', function (ws, command, request) {
       clients.connections.forEach(function allClients(client){
         if (client.readyState === WebSocket.OPEN) {
         // Broadcast new number of brains to all interfaces except yourself
-        if (access === 'public' || type == 'interfaces'){
+        if (access === 'public' || (type == 'interfaces' && access === undefined)){
           if (client.id != userId){
               client.send(str);
           }

@@ -9,17 +9,29 @@ class BrainsAtPlay {
             this.add(input)
         }
         this.synchronyBuffer = new Array(SYNCHRONY_BUFFER_SIZE).fill(0)
-        this.synchrony= new Array(channels).fill(0);
+        this.synchronyChannels = new Array(channels).fill(0);
+        this.synchrony = 0;
         this.eegChannelCoordinates = this.getEEGCoordinates()
         this.eegChannelsOfInterest = []
+        this.connection;
+        this.me;
+        this.username;
+        this.nInterfaces = 0;
+        this.public = true;
+
+        this.generate = false;
+        this.base_freq = 1;
+        this.samplerate = 125;
+        this.generatedSamples = 0;
     }
 
-    getMe(){
+
+    getMyIndex(){
         let user = 0;
         let gotMe = false;
 
         this.users.forEach((_,key) => {
-            if (key == userId || key == 'me'){
+            if (key == this.username || key == 'me'){
                 this.me = user;
                 gotMe = true;
             }
@@ -34,9 +46,13 @@ class BrainsAtPlay {
     simulate(count){
         this.users.clear()
         this.add('me')
-        for (let i = 0; i < count-1; i++)
-        this.add('other'+count-1);
+        for (let i = 1; i < count; i++){
+            this.add('other'+i);
+        }
+        this.getMyIndex()
         this.updateEEGChannelsOfInterest()
+        this.username = "me"
+        this.generate = true;
     }
 
     add(id,channelNames) {
@@ -66,6 +82,62 @@ class BrainsAtPlay {
     }
 
 
+    stdev(dataOfInterest){
+        let totalAvg = average(dataOfInterest);
+        let std = standardDeviation(dataOfInterest);
+
+        let relData = new Array(this.eegChannelsOfInterest.length).fill(0)
+        let dev;
+
+        this.eegChannelsOfInterest.forEach((channel,ind) => {
+            dev = (dataOfInterest[ind] - totalAvg)/std;
+            if (isNaN(dev) && ['voltage','delta','theta','alpha','beta','gamma'].includes(scenes[state].signaltype)){
+                relData[channel] = 0;
+            } else if (isNaN(dev) && ['synchrony'].includes(scenes[state].signaltype)) {
+                relData[channel] = projectionData[channel];
+            }
+            else {
+                relData[channel] = dev;
+            }
+        })
+        return relData
+    }
+
+    getPower(relative=false){
+        let dataOfInterest = [];
+        let power = new Array(this.eegChannelsOfInterest.length).fill(NaN);
+        this.eegChannelsOfInterest.forEach((channel,ind) => {
+            if (this.userVoltageBuffers[this.me].length > ind){
+                power[channel] = averagePower(this.userVoltageBuffers[this.me][ind])
+                dataOfInterest.push(power[channel])
+            }
+        })
+
+        if (relative){
+            power = this.stdev(dataOfInterest)
+        }
+
+        return power
+    }
+
+    getBandPower(band, relative=false){
+        let dataOfInterest = [];
+        let bandpower = new Array(this.eegChannelsOfInterest.length).fill(NaN);
+        this.eegChannelsOfInterest.forEach((channel,ind) => {
+            if (this.userVoltageBuffers[this.me].length > ind){
+                bandpower[channel] = bci.bandpower(this.userVoltageBuffers[this.me][ind], this.samplerate, band, {relative: false});
+                dataOfInterest.push(bandpower[channel])
+            }
+        })
+
+        if (relative){
+            bandpower = this.stdev(dataOfInterest)
+        }
+
+        return bandpower
+    }
+
+
     getSynchrony(method="pcc") {
 
         let channelSynchrony = [];
@@ -76,16 +148,14 @@ class BrainsAtPlay {
             let keys = brains.users.keys()
             let edgesArray = [];
             let currentEdge = []
+            // pairwise
             currentEdge.push(keys.next().value) // Brain 1
             currentEdge.push(keys.next().value) // Brain 2
             edgesArray.push(currentEdge)
 
             if (method == 'pcc') {
-
-                //
-                // Synchrony Calculation
+                
                 // Source: http://stevegardner.net/2012/06/11/javascript-code-to-calculate-the-pearson-correlation-coefficient/
-                //
 
                 edgesArray.forEach((edge) => {
 
@@ -148,20 +218,22 @@ class BrainsAtPlay {
                 }
                 })
 
-                this.synchrony = channelSynchrony.map((channelData) => {return channelData.reduce(sum, 0) / channelData.length})
+                this.synchronyChannels = channelSynchrony.map((channelData) => {return channelData.reduce(sum, 0) / channelData.length})
             } else {
-                this.synchrony = new Array(channels).fill(0)
+                this.synchronyChannels = new Array(channels).fill(0)
             }
 
-            if (!isNaN(average(this.synchrony))) {
-                this.synchronyBuffer.push(average(this.synchrony))
+            if (!isNaN(average(this.synchronyChannels))) {
+                this.synchronyBuffer.push(average(this.synchronyChannels))
             } else {
                 this.synchronyBuffer.push(0)
             }        
         } else {
-            this.synchrony = new Array(channels).fill(0);
-            this.synchronyBuffer.push(this.synchrony)
+            this.synchronyChannels = new Array(channels).fill(0);
+            this.synchronyBuffer.push(this.synchronyChannels)
         }
+
+        this.synchrony = average(this.synchronyBuffer)
     }
 
     initializeBuffer(buffer=undefined) {
@@ -220,6 +292,42 @@ class BrainsAtPlay {
     //         })
     //     }
     // }
+
+    generateVoltageStream(){
+            let channels = this.eegChannelsOfInterest.length
+
+            this.users.forEach((user) => {
+                let signal = new Array(channels);
+                // let amp = Math.random()
+                for (let channel =0; channel < channels; channel++) {
+                    signal[channel] = bci.generateSignal([Math.random()], [this.base_freq+Math.random()*40], this.samplerate, (1/this.base_freq));
+                }
+        
+                let startTime = Date.now()
+                let time = makeArr(startTime,startTime+(1/this.base_freq),(1/this.base_freq)*this.samplerate)
+        
+                let data = {
+                    signal: signal,
+                    time: time
+                }
+                user.streamIntoBuffer(data)
+            })
+        }
+    
+
+    update() {
+        // Generate signal if specified
+        if (this.generate) {
+            if (this.generatedSamples == Math.round(this.samplerate*(1/this.base_freq))-1){
+                this.generateVoltageStream()
+                this.generatedSamples = 0;
+            } else {
+                this.generatedSamples += 1
+        }}
+
+        this.getSynchrony('pcc')
+        this.updateBuffer('brains','userVoltageBuffers')
+    }
 
     updateBuffer(source='brains',buffer='userVoltageBuffers'){
         let userInd;
@@ -294,7 +402,7 @@ class BrainsAtPlay {
         this.eegChannelsOfInterest = []
         let myBrain;        
         Object.keys(this.eegChannelCoordinates).forEach((name,ind) => {
-            myBrain = brains.users.get(userId)
+            myBrain = brains.users.get(this.username)
             if (myBrain == undefined){
                 myBrain = brains.users.get('me')
             }
@@ -307,7 +415,194 @@ class BrainsAtPlay {
         })
     }
 
+    // Networking Suite
+    connect(url){
 
+    let BrainsAtPlay = this;
+
+    if (this.connection) {
+        this.connection.onerror = connection.onopen = connection.onclose = null;
+        this.connection.close();
+    }
+
+    if (url.protocol == 'http:'){
+        this.connection = new WebSocket(`ws://` + url.hostname,[this.username, 'interfaces']);
+    } else if (url.protocol == 'https:'){
+        this.connection = new WebSocket(`wss://` + url.hostname,[this.username, 'interfaces']);
+    } else{
+        console.log('invalid protocol')
+        return
+    }
+
+    this.connection.onerror = function () {
+        console.log('error')
+        showMessage('WebSocket error');
+        announcement('WebSocket error.\n Please refresh your browser and try again.');
+    };
+
+    this.connection.onopen = function () {
+        showMessage('WebSocket connection established')
+        BrainsAtPlay.connection.send(JSON.stringify({'destination':'initializeBrains','public': BrainsAtPlay.public}));
+        state = 3;
+    };
+
+    this.connection.onmessage = function (msg) {
+
+        let obj = JSON.parse(msg.data);
+        if (obj.destination == 'bci'){
+            if (BrainsAtPlay.users.get(obj.id) != undefined){
+                BrainsAtPlay.users.get(obj.id).streamIntoBuffer(obj.data)
+            } 
+            updateChannels(BrainsAtPlay.getMaxChannelNumber())
+
+        } else if (obj.destination == 'init'){
+
+            BrainsAtPlay.users.clear()
+
+            if (obj.privateBrains && BrainsAtPlay.public === false){
+                BrainsAtPlay.add(obj.privateInfo.id, obj.privateInfo.channelNames)
+            } else {
+                for (let newUser = 0; newUser < obj.nBrains; newUser++){
+                    if (BrainsAtPlay.users.get(obj.ids[newUser]) == undefined && obj.ids[newUser] != undefined){
+                        if (BrainsAtPlay.public){
+                            BrainsAtPlay.add(obj.ids[newUser], obj.channelNames[newUser])
+                        } else {
+                            if (obj.ids[newUser] == this.username){
+                                BrainsAtPlay.add(obj.ids[newUser], obj.channelNames[newUser])
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (BrainsAtPlay.users.size == 0){
+                BrainsAtPlay.add('me');
+            }
+
+            BrainsAtPlay.generate = false;
+            stateManager(true)
+            BrainsAtPlay.updateEEGChannelsOfInterest()
+            BrainsAtPlay.initializeBuffer('userVoltageBuffers')
+
+            BrainsAtPlay.nInterfaces = obj.nInterfaces;
+
+            // Announce number of brains currently online
+
+            if (BrainsAtPlay.public === true && (obj.nBrains > 0) && BrainsAtPlay.users.get('me') == undefined){
+                announcement(`<div>Welcome to the Brainstorm
+                                <p class="small">${BrainsAtPlay.users.size} brains online</p></div>`)
+                document.getElementById('nBrains').innerHTML = `${BrainsAtPlay.users.size}`
+            } else if (BrainsAtPlay.public === false) {
+                if (obj.privateBrains){
+                    document.getElementById('nBrains').innerHTML = `1`
+                } else {
+                    if (BrainsAtPlay.users.has("me")){
+                        document.getElementById('nBrains').innerHTML = `0`
+                    } else {
+                        document.getElementById('nBrains').innerHTML = `${BrainsAtPlay.users.size}`
+                    }
+                }
+            } else {
+                announcement(`<div>Welcome to the Brainstorm
+                                <p class="small">No brains online</p></div>`)
+                document.getElementById('nBrains').innerHTML = `0`
+            }
+            if (BrainsAtPlay.public === false) {
+                document.getElementById('nInterfaces').innerHTML = `1`
+            } else {
+                document.getElementById('nInterfaces').innerHTML = `${BrainsAtPlay.nInterfaces}`
+            }
+
+            BrainsAtPlay.getMyIndex()
+        }
+
+        else if (obj.destination == 'brains'){
+            // let reallocationInd;
+            update = obj.n;
+
+            // Only update if access matches
+            if ((BrainsAtPlay.public) || (!BrainsAtPlay.public && obj.access === 'private')){
+                if (update == 1){
+                        if (BrainsAtPlay.public){
+                            document.getElementById('nBrains').innerHTML = `${BrainsAtPlay.users.size + 1}`
+                            BrainsAtPlay.add(obj.id, obj.channelNames)
+                            BrainsAtPlay.remove('me')
+                        } else if (!BrainsAtPlay.public && obj.access === 'private') {
+                            BrainsAtPlay.add(obj.id, obj.channelNames)
+                            document.getElementById('nBrains').innerHTML = `1`
+                            BrainsAtPlay.remove('me')
+                        }
+                        reallocationInd = BrainsAtPlay.users.size - 1
+                } else if (update == -1){
+                    // get index of removed id
+                    let iter = 0;
+                    BrainsAtPlay.users.forEach((key) =>{
+                        if (key == obj.id){
+                            reallocationInd = iter
+                        }
+                        iter++
+                    })
+
+                    if (BrainsAtPlay.public){
+                        if (BrainsAtPlay.users.size == 0){
+                            announcement('all users left the brainstorm')
+                            document.getElementById('nBrains').innerHTML = `0`
+                            BrainsAtPlay.add('me')
+                        } else {
+                            document.getElementById('nBrains').innerHTML = `${BrainsAtPlay.users.size-1}`
+                        }
+                    } else if (!BrainsAtPlay.public && obj.access === 'private'){
+                        document.getElementById('nBrains').innerHTML = `0`
+                        BrainsAtPlay.add('me')
+                    }
+
+                    // delete id from map
+                    BrainsAtPlay.remove(obj.id)
+                }
+                
+                if (state != 0){
+                    stateManager(true)
+                    // brains.reallocateUserBuffers(reallocationInd);
+                }
+                BrainsAtPlay.initializeBuffer('userVoltageBuffers')
+                BrainsAtPlay.updateEEGChannelsOfInterest()
+            }
+
+            BrainsAtPlay.getMyIndex()
+
+            } 
+            else if (obj.destination == 'interfaces'){
+                BrainsAtPlay.nInterfaces += obj.n;
+                document.getElementById('nInterfaces').innerHTML = `${BrainsAtPlay.nInterfaces}`
+            } 
+            else {
+            console.log(obj)
+        }
+    };
+
+    this.connection.onclose = function () {
+        showMessage('WebSocket connection closed');
+        BrainsAtPlay.connection = undefined;
+        announcement(`<div>Exiting the Brainstorm
+        <p class="small">Thank you for playing!</p></div>`)
+        if (window.innerWidth >= 768) {
+            document.getElementById('id-params').style.display = `none`;
+            document.getElementById('nBrains-params').style.display = `none`;
+            document.getElementById('nInterfaces-params').style.display = `none`;
+        }
+        document.getElementById('access-mode-div').innerHTML = ` 
+        <p id="access-mode" class="small">Not Connected</p>
+          `
+        BrainsAtPlay.nInterfaces = undefined;
+        document.getElementById("connection-button").innerHTML = 'Connect'; 
+        BrainsAtPlay.simulate(2)
+        stateManager(true)
+        BrainsAtPlay.generate = true;
+        BrainsAtPlay.getMyIndex()
+    };
+}
+
+    // Included Data
     getEEGCoordinates(){
         return {
             Fp1: [-21.2, 66.9, 12.1],

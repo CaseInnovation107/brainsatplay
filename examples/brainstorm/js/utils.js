@@ -50,6 +50,14 @@ function min(arr){
     })
 }
 
+function pairwise(list) {
+    if (list.length < 2) { return []; }
+    var first = list[0],
+        rest  = list.slice(1),
+        pairs = rest.map(function (x) { return [first, x]; });
+    return pairs.concat(pairwise(rest));
+  }
+
 
 
 function squareDiffs(data){
@@ -115,28 +123,6 @@ function makeArr(startValue, stopValue, cardinality) {
     //     p5.rect(band * (p5.width / (band_names.length)), p5.height / 2, (band + 1) * (p5.width / (band_names.length)), power)
     // }
 
-function generateVoltageStream(channels) {
-
-    brains.users.forEach((user) => {
-        let signal = new Array(channels);
-        // let amp = Math.random()
-        for (let channel =0; channel < channels; channel++) {
-            signal[channel] = bci.generateSignal([Math.random()], [base_freq+Math.random()*40], samplerate, (1/base_freq));
-        }
-
-        let startTime = Date.now()
-        let time = makeArr(startTime,startTime+(1/base_freq),(1/base_freq)*samplerate)
-
-        let data = {
-            type: 'ts_filtered',
-            signal: signal,
-            time: time
-        }
-
-            user.streamIntoBuffer(data)
-        })
-}
-
 function switchToChannels(pointCount,users){
 
     // Reset View Matrix
@@ -172,7 +158,6 @@ function distortToggle(){
 function stateManager(forceUpdate=false){
     // Do We Have Vertices Defined OR Did State Change OR Is This Animation Over?
     if (forceUpdate || vertexHome == undefined || state != prevState || newSignalType || (scenes[state].timer && ((Date.now() - animStart)/1000 > scenes[state].timer))){
-
     if (scenes[state].timer && ((Date.now() - animStart)/1000 > scenes[state].timer)){
         state++;
     }
@@ -263,8 +248,8 @@ function stateManager(forceUpdate=false){
         document.getElementById('signaltypes').style.opacity = '0%'
     }
 
-    if (ws != undefined){
-        if (public){
+    if (brains.connection != undefined){
+        if (brains.public){
             document.getElementById('brain').style.opacity = '25%'
             document.getElementById('channels').style.opacity = '25%'
             document.getElementById('brain').style.pointerEvents = 'none'
@@ -429,15 +414,15 @@ function toggleChat(){
 }
 
 function toggleAccess(){
-    public = !public;
-    if (public){
-        document.getElementById('access-mode').innerHTML = 'Public Mode'
+    brains.public = !brains.public;
+    if (brains.public){
         state = 3;
-        initializeBrains()
+        document.getElementById('access-mode').innerHTML = 'Public Mode'
+        brains.connection.send(JSON.stringify({'destination':'initializeBrains','public': BrainsAtPlay.public}));
     } else {
         state = 1;
         document.getElementById('access-mode').innerHTML = 'Isolation Mode'
-        initializeBrains()
+        brains.connection.send(JSON.stringify({'destination':'initializeBrains','public': BrainsAtPlay.public}));
     }
 }
 
@@ -591,49 +576,17 @@ function lagDrawMode() {
 }
 
 function updateColorsByChannel(new_sync) {
-    let projectionData = new Array(passedEEGCoords.length).fill(NaN);
-        let dataOfInterest = []
+        let relSignal = new Array(passedEEGCoords.length).fill(NaN);
 
         if (['projection','z_displacement'].includes(scenes[state].effect)){
-            brains.eegChannelsOfInterest.forEach((channel,ind) => {
             if (scenes[state].signaltype == 'synchrony') {
-                projectionData[channel] = new_sync[ind];
-            } else {
-                    if (brains.me != undefined && brains.userVoltageBuffers[brains.me].length > ind){
-                        if (scenes[state].signaltype == 'voltage'){
-                            projectionData[channel] = averagePower(brains.userVoltageBuffers[brains.me][ind]);
-                        } else if (['delta','theta','alpha','beta','gamma'].includes(scenes[state].signaltype)){
-                            try {
-                                // NOTE: Not going to be correct with real-time sample rate
-                                projectionData[channel] = bci.bandpower(brains.userVoltageBuffers[brains.me][ind], samplerate, scenes[state].signaltype, {relative: false});
-                            } catch {
-                                console.log('sample rate too low')
-                            }
-                    } else {
-                        projectionData[channel] = 0;
-                    }
-                    }
+            brains.eegChannelsOfInterest.forEach((channel,ind) => {
+                relSignal[channel] = new_sync[ind]; // absolute
+            })} else if (scenes[state].signaltype == 'voltage'){
+                relSignal = brains.getPower(relative=true) // relative
+            } else if (['delta','theta','alpha','beta','gamma'].includes(scenes[state].signaltype)){
+                relSignal = brains.getBandPower(scenes[state].signaltype, relative=true) // relative
             }
-            dataOfInterest.push(projectionData[channel])
-        })
-
-        let totalAvg = average(dataOfInterest);
-        let std = standardDeviation(dataOfInterest);
-
-        let relSignal = new Array(passedEEGCoords.length).fill(0)
-        let sig;
-        
-        brains.eegChannelsOfInterest.forEach((channel) => {
-            sig = (projectionData[channel] - totalAvg)/std;
-            if (isNaN(sig) && ['voltage','delta','theta','alpha','beta','gamma'].includes(scenes[state].signaltype)){
-                relSignal[channel] = 0;
-            } else if (isNaN(sig) && ['synchrony'].includes(scenes[state].signaltype)) {
-                relSignal[channel] = projectionData[channel];
-            }
-            else {
-                relSignal[channel] = sig;
-            }
-        })
 
         if (['projection'].includes(scenes[state].effect) && brains.me != undefined){
             gl.uniform1fv(uniformLocations.eeg_signal, new Float32Array(relSignal));

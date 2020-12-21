@@ -37,14 +37,17 @@ module.exports.attemptLogin = async (req, res) => {
         res.send({ result: 'OK', msg: msg });
       }
     }  else {
-      res.send({ result: 'incomplete', msg: 'username/password not defined' })
+      msg = 'username/password not defined'
+      res.send({ result: 'incomplete', msg: msg })
     }
   } else {
       if (guestId != undefined){
         let numDocs = await db.collection('profiles').find({ username: guestId }).count();
         if (numDocs == 0){
+          msg = guestId
           res.send({ result: 'OK', msg: guestId });
         } else {
+          msg = 'profile exists with this username. please choose a different guest ID.'
           res.send({ result: 'incomplete', msg: 'profile exists with this username. please choose a different guest ID.' });
         }
       } else {

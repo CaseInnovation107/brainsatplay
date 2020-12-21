@@ -177,7 +177,6 @@
             </div>
             <div id="connection-toggle" class="params">
                 <button id="connection-button" onclick="toggleConnection();">Connect</button>
-                <!-- <button id="connection-button" onclick="toggleConnection();">Connect</button> -->
             </div>
             </div>
         </div>
@@ -209,7 +208,7 @@
             <h5>Instructions</h5>
             <p>Use the <strong>States</strong> panel to view different scenes of brain activity—both individual and collective. Toggle between Signal Types on the right side of the screen.</p>
             <ol>
-            <li><p>You start the experience by viewing a synthetic stream of two brains. Under <strong>Connection Info</strong>, press <strong>Enter the Brainstorm</strong> to connect with a network of real users and their brains.</p></li>
+            <li><p>You start the experience by viewing a synthetic stream of two brains. Under <strong>Connection Info</strong>, press <strong>Connect</strong> to enter a network of real users and their brains.</p></li>
             <li><p>Copy your <strong>ID</strong> to our <a href="https://github.com/brains-at-play/brains-at-play">Python streamer</a> and send your data using OpenBCI or Neurosity headsets.</p></li>
         </ol>
         </div>
@@ -232,7 +231,7 @@
 <script>
 
     // Set Deployment Controls
-    let option = 'server';
+    let option = 'local';
 
     // Initialize WebGL Canvas
     let canvas = document.getElementById('webgl');
@@ -347,11 +346,6 @@
     let ease = true;
     let rotation = true;
     let zoom = true;
-    let generate;
-    let base_freq = 1;
-    let samplerate = 125;
-    let generate_interval = Math.round(samplerate*(1/base_freq))
-    let count = 0;
     let messages = []
     let url;
     if (option  === 'local'){
@@ -360,10 +354,7 @@
         url = new URL('https://brainsatplay.azurewebsites.net/');
     }
     let brains;
-    let userId;
-    let ws;
     let welcomed = false;
-    let nInterfaces = 0;
     let newSignalType = false;
 
     // Set User Interactions
@@ -385,7 +376,6 @@
     let showUI = true;
     let chat = false;
     let mouseDistort = false;
-    let public = true;
     let showLogin = false;
     let showSignUp = false;
 
@@ -403,7 +393,6 @@
     // // Instantiate a Default Set of Brain
     brains = new BrainsAtPlay()
     brains.simulate(2);
-    generate = true;
 
     // Begin Rendering the Visualization
     if (!gl) {
@@ -418,7 +407,7 @@
 // Initialize Vertex Attributes
     let arrays = {
         position: {numComponents: 3, data: vertexCurr},
-        z_displacement: {numComponents: 1, data:brains.BufferToWebGL()},
+        z_displacement: {numComponents: 1, data: brains.BufferToWebGL()},
     }
     let attribs;
     gl, program, attribs = initializeAttributes(gl, program, arrays)
@@ -473,35 +462,18 @@
     
 
     function animate() {
+
         requestAnimationFrame(animate)
         resize(gl.canvas);
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         mouseState()
-        brains.getMe()
         stateManager();
-
-
-        // Generate signal if specified
-        if (generate) {
-            if (count == generate_interval-1){
-                generateVoltageStream(channels)
-                count = 0;
-            } else {
-                count += 1
-            }}
+        brains.update()
 
         // Update rotation speeds
         moveStatus = false;
         diff_x *= (1-scenes[state].ease);
         diff_y *= (1-scenes[state].ease);
-
-        // Get synchrony
-        if (scenes[state].signaltype == 'synchrony') {    
-            brains.getSynchrony('pcc')
-        } else {
-            brains.synchronyBuffer.shift()
-            brains.synchronyBuffer.push(0)
-        }
 
         // Rotate scene
         rotate(scenes[state], diff_x,diff_y)
@@ -513,7 +485,7 @@
         // Update Uniforms
         gl.uniformMatrix4fv(uniformLocations.matrix, false, mvpMatrix)
         gl.uniform1f(uniformLocations.u_time, (Date.now()-startTime)/1000);
-        gl.uniform1f(uniformLocations.synchrony, average(brains.synchronyBuffer));
+        gl.uniform1f(uniformLocations.synchrony, brains.synchrony);
         gl.uniform2fv(uniformLocations.aspectChange, [(canvas.width)/(originalAspectX),(canvas.height)/(originalAspectY)]);
 
         if (mouseDistort){
@@ -522,13 +494,8 @@
             gl.uniform2fv(uniformLocations.mousePos, [NaN,NaN]);
         }
 
-        // Update Voltages Unless No Brains
-        if (brains.users.size > 0){
-            brains.updateBuffer(source='brains')
-        }
-
         // Update color based on channel data
-        updateColorsByChannel(brains.synchrony)
+        updateColorsByChannel(brains.synchronyChannels)
         easeCamera()
         easeVertices()
 
