@@ -39,9 +39,8 @@ async function login(type='guest'){
         formDict.guestaccess = false
     }
 
-    let resDict = await clientAction('login','POST', formDict);
+        let resDict = await brains.login(formDict)
         if (resDict.result == 'OK'){
-            brains.username = resDict.msg;
             document.getElementById('userId').innerHTML = brains.username
             form.reset()
             toggleLoginScreen();
@@ -67,7 +66,8 @@ async function signup(){
             document.getElementById('signup-message').innerHTML = "passwords don't match. please try again."
     }
     else {
-        let resDict = await clientAction('signup','POST', formDict);
+
+        let resDict = await brains.signup(formDict);
         if (resDict.result == 'OK'){
             form.reset()
             toggleLoginScreen();

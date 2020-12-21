@@ -240,7 +240,7 @@
     let gl = canvas.getContext('webgl')
 
     // Set Visualization Controls
-    let GENERIC_ZOOM = max([1e5/window.innerWidth,1e5/window.innerHeight])*2
+    let GENERIC_ZOOM = Math.max(1e5/window.innerWidth,1e5/window.innerHeight)*2
     let effects = [false, 'projection','synchrony','scan'] // Order used in Shaders.js code
 
     let scenes = [
@@ -468,6 +468,7 @@
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         mouseState()
         stateManager();
+        brainDependencies(brains.updateArray);
         brains.update()
 
         // Update rotation speeds

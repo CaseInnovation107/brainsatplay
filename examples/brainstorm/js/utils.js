@@ -19,110 +19,6 @@
 //     return data
 // }
 
-function sum(acc,cur){
-    return acc + cur
-}
-
-function normalize(min, max,scaling) {
-    var delta = max - min;
-    return function (val) {
-        return scaling * (2*((val - min) / delta) - 1);
-    };
-}
-
-
-function innerLengths(nestedArrays){
-    return nestedArrays.map((innerArray) => {
-        return innerArray.length;
-    }
-    )
-}
-
-function max(arr){
-    return arr.reduce((acc,cur) => {
-        return Math.max(acc,cur);
-    })
-}
-
-function min(arr){
-    return arr.reduce((acc,cur) => {
-        return Math.min(acc,cur);
-    })
-}
-
-function pairwise(list) {
-    if (list.length < 2) { return []; }
-    var first = list[0],
-        rest  = list.slice(1),
-        pairs = rest.map(function (x) { return [first, x]; });
-    return pairs.concat(pairwise(rest));
-  }
-
-
-
-function squareDiffs(data){
-    let avg = average(data)
-    let sqD = data.map(val => {
-        var diff = val - avg;
-        return diff * diff;
-  })
-  return(sqD)
-}
-
-function power(acc,cur){
-    return acc + ((cur*cur)/2)
-}
-
-function average(data){
-    return data.reduce(sum, 0) / data.length;
-  }
-
-  function averagePower(data){
-    return (data.reduce(power, 0))/data.length;
-  }
-
-  function standardDeviation(values){
-    let sqD = squareDiffs(values)
-    var aSqD = average(sqD);
-    var stdDev = Math.sqrt(aSqD);
-    return stdDev;
-  }
-  
-
-function makeArr(startValue, stopValue, cardinality) {
-    var arr = [];
-    var step = (stopValue - startValue) / (cardinality - 1);
-    for (var i = 0; i < cardinality; i++) {
-      arr.push(startValue + (step * i));
-    }
-    return arr;
-  }
-
-    // Plot Bands
-    // let power;
-    // let label;
-    // let band_names = ['delta', 'theta', 'alpha', 'beta', 'gamma']
-    // let band_meaning = ['(1-3 Hz)','(4-7 Hz)','(8-12 Hz)','(13-30 Hz)','(31-50 Hz)']
-    //
-    // for (let band = 0; band < band_names.length; band++) {
-    //     try {
-    //         power = bci.bandpower(y_filtered[0], samplerate, band_names[band], {relative: true});
-    //         label = band_names[band] + ' ' + band_meaning[band]
-    //     } catch {
-    //         label = 'sample rate too low'
-    //         this_band_color = p5.color('#FF76E9');
-    //         power = 1
-    //     }
-    //     power = (p5.height / 2) - (p5.height / 4) * (power)
-    //     squareColor.setAlpha(255 * (power));
-    //     p5.fill(squareColor)
-    //     p5.text(label, (band + .5) * (p5.width / band_names.length), power - 20);
-    //     this_band_color.setAlpha(200 * (power));
-    //     p5.fill(this_band_color)
-    //     p5.rectMode(p5.CORNERS);
-    //     p5.rect(band * (p5.width / (band_names.length)), p5.height / 2, (band + 1) * (p5.width / (band_names.length)), power)
-    // }
-
 function switchToChannels(pointCount,users){
 
     // Reset View Matrix
@@ -416,14 +312,23 @@ function toggleChat(){
 function toggleAccess(){
     brains.public = !brains.public;
     if (brains.public){
-        state = 3;
         document.getElementById('access-mode').innerHTML = 'Public Mode'
         brains.connection.send(JSON.stringify({'destination':'initializeBrains','public': BrainsAtPlay.public}));
     } else {
-        state = 1;
         document.getElementById('access-mode').innerHTML = 'Isolation Mode'
         brains.connection.send(JSON.stringify({'destination':'initializeBrains','public': BrainsAtPlay.public}));
     }
+}
+
+
+function toggleUI(){
+    showUI = !showUI;
+
+    if (showUI){
+        document.getElementById('ui-elements').style.display = 'block'
+        } else {
+            document.getElementById('ui-elements').style.display = 'none'
+        }
 }
 
 // Resizing
@@ -620,4 +525,88 @@ function updateSignalType(el){
     scenes[state].signaltype = el.innerHTML.toLowerCase(); 
     document.getElementById('signal-type').innerHTML = el.innerHTML.toLowerCase(); 
     newSignalType = true;
+}
+
+function brainDependencies(updateArray){
+
+    updateArray.forEach((updateObj) => {
+    if (updateObj.destination !== undefined && updateObj.destination.length != 0) {
+    if (updateObj.destination == 'opened'){
+        state = 3;
+    } else if (updateObj.destination == 'error'){
+        console.log('error')
+        announcement('WebSocket error.\n Please refresh your browser and try again.');
+    } else if (updateObj.destination == 'init'){
+        stateManager(true)
+
+        // Announce number of brains currently online
+        if (brains.public === true && (updateObj.nBrains > 0) && brains.users.get('me') == undefined){
+            announcement(`<div>Welcome to the Brainstorm
+                            <p class="small">${brains.users.size} brains online</p></div>`)
+            document.getElementById('nBrains').innerHTML = `${brains.users.size}`
+        } else if (brains.public === false) {
+            if (updateObj.privateBrains){
+                document.getElementById('nBrains').innerHTML = `1`
+            } else {
+                if (brains.users.has("me")){
+                    document.getElementById('nBrains').innerHTML = `0`
+                } else {
+                    document.getElementById('nBrains').innerHTML = `${brains.users.size}`
+                }
+            }
+        } else {
+            announcement(`<div>Welcome to the Brainstorm
+                            <p class="small">No brains online</p></div>`)
+            document.getElementById('nBrains').innerHTML = `0`
+        }
+        if (brains.public === false) {
+            document.getElementById('nInterfaces').innerHTML = `1`
+        } else {
+            document.getElementById('nInterfaces').innerHTML = `${brains.nInterfaces}`
+        }
+    } else if (updateObj.destination == 'brains'){
+        update = updateObj.n;
+
+        if (state != 0){
+            stateManager(true)
+        }
+
+        if ((brains.public) || (!brains.public && updateObj.access === 'private')){
+            if (update == 1){
+                    if (brains.public){
+                        document.getElementById('nBrains').innerHTML = `${brains.users.size}`
+                    } else if (!brains.public && updateObj.access === 'private') {
+                        document.getElementById('nBrains').innerHTML = `1`
+                    }
+            } else if (update == -1){
+                if (brains.public){
+                    if (brains.users.size == 0){
+                        announcement('all users left the brainstorm')
+                        document.getElementById('nBrains').innerHTML = `0`
+                    } else {
+                        document.getElementById('nBrains').innerHTML = `${brains.users.size}`
+                    }
+                } else if (!brains.public && updateObj.access === 'private'){
+                    document.getElementById('nBrains').innerHTML = `0`
+                }
+            }
+        }
+    } else if (updateObj.destination == 'interface'){
+        document.getElementById('nInterfaces').innerHTML = `${brains.nInterfaces}`
+    } else if (updateObj.destination =='closed'){
+        announcement(`<div>Exiting the Brainstorm
+            <p class="small">Thank you for playing!</p></div>`)
+            if (window.innerWidth >= 768) {
+                document.getElementById('id-params').style.display = `none`;
+                document.getElementById('nBrains-params').style.display = `none`;
+                document.getElementById('nInterfaces-params').style.display = `none`;
+            }
+            document.getElementById('access-mode-div').innerHTML = ` 
+            <p id="access-mode" class="small">Not Connected</p>
+            `
+            document.getElementById("connection-button").innerHTML = 'Connect'; 
+            stateManager(true)
+    }
+}
+})
 }

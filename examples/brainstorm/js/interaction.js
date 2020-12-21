@@ -76,14 +76,3 @@ function keyboardShortcuts(ev){
         // } 
     }
 }
-
-
-function toggleUI(){
-    showUI = !showUI;
-
-    if (showUI){
-        document.getElementById('ui-elements').style.display = 'block'
-        } else {
-            document.getElementById('ui-elements').style.display = 'none'
-        }
-}
