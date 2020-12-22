@@ -230,26 +230,23 @@
 
 <script>
 
-    // Set Deployment Controls
-    let option = 'local';
-
-    // Initialize WebGL Canvas
+    // Initialize Visualization Variables
     let canvas = document.getElementById('webgl');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     let gl = canvas.getContext('webgl')
 
-    // Set Visualization Controls
+    // visualization controls
     let GENERIC_ZOOM = Math.max(1e5/window.innerWidth,1e5/window.innerHeight)*2
     let effects = [false, 'projection','synchrony','scan'] // Order used in Shaders.js code
 
     let scenes = [
         {
         name: 'Scan Phase', 
-        shapes: ['sphereShells'], // shape of points
+        shapes: ['sphereShells'],
         render: gl.POINTS,
         type: 'intro',
-        timer: 5.0, // display time in seconds; false has no animation
+        timer: 5.0, 
         message: ``,
         ease: 0.1,
         zoom: GENERIC_ZOOM,
@@ -303,15 +300,11 @@
     }
 ]
 
-    let channels = 16;
+    // global visualization variables
     let DESIRED_POINTS = 1e5/2; // 80000
-    let SIGNAL_SUSTAIN_ORIGINAL = 100;
     let AUTO_ROTATION_X = 0.0;
-    let SYNCHRONY_BUFFER_SIZE = 100;
     let DAMPING = .1;
     let epsilon = .001;
-
-    // Declare Global Visualization Variables
     let state = 0;
     let prevState = 0;
     let renderState = state;
@@ -332,10 +325,6 @@
     let dispBuffer;
     let colorBuffer;
     let uniformLocations;
-    let SIGNAL_SUSTAIN = Math.round(SIGNAL_SUSTAIN_ORIGINAL/channels);
-    if (SIGNAL_SUSTAIN%2 == 0){
-            SIGNAL_SUSTAIN += 1;
-    }
     let pointCount;
     let color;
     let cameraHome = scenes[state].zoom;
@@ -347,13 +336,6 @@
     let rotation = true;
     let zoom = true;
     let messages = []
-    let url;
-    if (option  === 'local'){
-        url = new URL('http://localhost');
-    } else if (option === 'server'){
-        url = new URL('https://brainsatplay.azurewebsites.net/');
-    }
-    let brains;
     let welcomed = false;
     let newSignalType = false;
 
@@ -390,8 +372,21 @@
     brainVertices = reducePointCount(brainpoints, DESIRED_POINTS);
     pointCount = brainVertices.length / 3;
 
-    // // Instantiate a Default Set of Brain
-    brains = new BrainsAtPlay()
+    // Instantiate BrainsAtPlay Object
+    let channels = 16;
+    let SIGNAL_SUSTAIN_ORIGINAL = 100;
+    let SIGNAL_SUSTAIN = Math.round(SIGNAL_SUSTAIN_ORIGINAL/channels);
+    if (SIGNAL_SUSTAIN%2 == 0){
+            SIGNAL_SUSTAIN += 1;
+    }
+    let url;
+    let option = 'local';
+    if (option  === 'local'){
+        url = new URL('http://localhost');
+    } else if (option === 'server'){
+        url = new URL('https://brainsatplay.azurewebsites.net/');
+    }
+    let brains = new BrainsAtPlay()
     brains.simulate(2);
 
     // Begin Rendering the Visualization

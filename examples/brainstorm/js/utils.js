@@ -144,7 +144,7 @@ function stateManager(forceUpdate=false){
         document.getElementById('signaltypes').style.opacity = '0%'
     }
 
-    if (brains.connection != undefined){
+    if (brains.network != undefined){
         if (brains.public){
             document.getElementById('brain').style.opacity = '25%'
             document.getElementById('channels').style.opacity = '25%'
@@ -313,10 +313,10 @@ function toggleAccess(){
     brains.public = !brains.public;
     if (brains.public){
         document.getElementById('access-mode').innerHTML = 'Public Mode'
-        brains.connection.send(JSON.stringify({'destination':'initializeBrains','public': BrainsAtPlay.public}));
+        brains.network.send(JSON.stringify({'destination':'initializeBrains','public': BrainsAtPlay.public}));
     } else {
         document.getElementById('access-mode').innerHTML = 'Isolation Mode'
-        brains.connection.send(JSON.stringify({'destination':'initializeBrains','public': BrainsAtPlay.public}));
+        brains.network.send(JSON.stringify({'destination':'initializeBrains','public': BrainsAtPlay.public}));
     }
 }
 

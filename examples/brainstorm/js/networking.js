@@ -1,7 +1,7 @@
 // Connection Management
 function toggleConnection(){
 
-    if (brains.connection == undefined){
+    if (brains.network == undefined){
         if (['me'].includes(brains.username)){
             toggleLoginScreen();
         } else {
@@ -21,7 +21,7 @@ function toggleConnection(){
         brains.connect(url)
     }
     } else {
-        brains.connection.close()
+        brains.network.close()
         state = 1;
     }
 }

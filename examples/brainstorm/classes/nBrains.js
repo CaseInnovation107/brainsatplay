@@ -8,16 +8,17 @@ class BrainsAtPlay {
         } else{
             this.add(input)
         }
-        this.synchronyBuffer = new Array(SYNCHRONY_BUFFER_SIZE).fill(0)
-        this.synchronyChannels = new Array(channels).fill(0);
         this.synchrony = 0;
         this.eegChannelCoordinates = this.getEEGCoordinates()
         this.eegChannelsOfInterest = []
-        this.connection;
+        this.network;
         this.me;
         this.username;
         this.nInterfaces = 0;
         this.public = true;
+
+        this.synchronyBuffer = new Array(100).fill(0)
+        this.synchronyChannels = new Array(channels).fill(0);
 
         this.generate = false;
         this.base_freq = 1;
@@ -244,7 +245,7 @@ class BrainsAtPlay {
 
                 this.synchronyChannels = channelSynchrony.map((channelData) => {return channelData.reduce((a, b) => a + b, 0) / channelData.length})
             } else {
-                this.synchronyChannels = new Array(channels).fill(0)
+                this.synchronyChannels = new Array(this.eegChannelsOfInterest.length).fill(0)
             }
 
             // Average Within Channels
@@ -274,7 +275,7 @@ class BrainsAtPlay {
             users = this.users.size;
         }
 
-        let perUser = Math.floor(pointCount/(users*channels))
+        let perUser = Math.floor(pointCount/(users*channels));
 
         for(user=0; user < users; user++){
             b.push([])
@@ -406,11 +407,13 @@ class BrainsAtPlay {
     }
 
     BufferToWebGL(buffer='userVoltageBuffers'){
+            // Upsample Buffer
             return new Float32Array([...this[buffer].flat(2)])
     }
 
     BufferToWebGL_Normalized(buffer='userVoltageBuffers'){
         let _temp = this.normalizeUserBuffers(this[buffer]);
+            // Upsample Buffer
         return new Float32Array([..._temp.flat(2)])
     }
 
@@ -454,30 +457,30 @@ class BrainsAtPlay {
     // Networking Suite
     connect(url){
 
-    if (this.connection) {
-        this.connection.onerror = connection.onopen = connection.onclose = null;
-        this.connection.close();
+    if (this.network) {
+        this.network.onerror = connection.onopen = connection.onclose = null;
+        this.network.close();
     }
 
     if (url.protocol == 'http:'){
-        this.connection = new WebSocket(`ws://` + url.hostname,[this.username, 'interfaces']);
+        this.network = new WebSocket(`ws://` + url.hostname,[this.username, 'interfaces']);
     } else if (url.protocol == 'https:'){
-        this.connection = new WebSocket(`wss://` + url.hostname,[this.username, 'interfaces']);
+        this.network = new WebSocket(`wss://` + url.hostname,[this.username, 'interfaces']);
     } else{
         console.log('invalid protocol')
         return
     }
 
-    this.connection.onerror =  () => {
+    this.network.onerror =  () => {
         this.setUpdateMessage({destination:'error'})
     };
 
-    this.connection.onopen =  () => {
-        this.connection.send(JSON.stringify({'destination':'initializeBrains','public': BrainsAtPlay.public}));
+    this.network.onopen =  () => {
+        this.network.send(JSON.stringify({'destination':'initializeBrains','public': BrainsAtPlay.public}));
         this.setUpdateMessage({destination:'opened'})
     };
 
-    this.connection.onmessage =  (msg) => {
+    this.network.onmessage =  (msg) => {
 
         let obj = JSON.parse(msg.data);
         if (obj.destination == 'bci'){
@@ -558,8 +561,8 @@ class BrainsAtPlay {
             }
     };
 
-    this.connection.onclose =  () => {
-        this.connection = undefined;
+    this.network.onclose =  () => {
+        this.network = undefined;
         this.nInterfaces = undefined;
         this.simulate(2)
         this.generate = true;
