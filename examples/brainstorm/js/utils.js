@@ -311,12 +311,16 @@ function updateUI(){
             document.getElementById('userinfo').style.opacity = '100%'
             document.getElementById('groupdynamics').style.opacity = '100%'
             document.getElementById('userinfo').style.pointerEvents = 'auto'
-            if (brains.users.size >= 2){
+            if (brains.users.size <= 2){
                 document.getElementById('groupdynamics').style.opacity = '25%'
                 document.getElementById('groupdynamics').style.pointerEvents = 'none'
+                document.getElementById('userinfo').style.opacity = '25%'
+                document.getElementById('userinfo').style.pointerEvents = 'none'
             } else {
                 document.getElementById('groupdynamics').style.opacity = '100%'
                 document.getElementById('groupdynamics').style.pointerEvents = 'auto'
+                document.getElementById('userinfo').style.opacity = '100'
+                document.getElementById('userinfo').style.pointerEvents = 'auto'
             }
 
             if (['projection','z_displacement'].includes(scenes[state].effect)){
