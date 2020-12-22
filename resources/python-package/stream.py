@@ -25,7 +25,7 @@ async def main():
     # Mac: '/dev/cu.usbserial-________'
     # Windows: 'COM_'
                     
-    URL = 'http://localhost'
+    URL = 'https://brainsatplay.azurewebsites.net'
     # Local: 'http://localhost'
     # Deployed Game: 'https://brainsatplay.azurewebsites.net'
 

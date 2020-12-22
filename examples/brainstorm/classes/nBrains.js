@@ -127,8 +127,7 @@ class BrainsAtPlay {
     getPower(relative=false){
         let dataOfInterest = [];
         let power = new Array(this.eegChannelsOfInterest.length).fill(NaN);
-
-        if (this.me){
+        if (this.me != undefined){
         this.eegChannelsOfInterest.forEach((channel,ind) => {
             if (this.userVoltageBuffers[this.me].length > ind){
                 // Calculate Average Power of Voltage Signal
@@ -360,7 +359,7 @@ class BrainsAtPlay {
             } else {
                 this.generatedSamples += 1
         }}
-
+        
         this.getSynchrony('pcc')
         this.updateBuffer('brains','userVoltageBuffers')
         this.setUpdateMessage()
