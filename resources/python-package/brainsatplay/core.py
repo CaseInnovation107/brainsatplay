@@ -38,7 +38,7 @@ class Brain(object):
     def __str__(self):
         return '{} _ {}'.format(self.id, self.date)
 
-    async def stream(self, url, login_data, access):
+    async def stream(self, url, login_data, game, access):
 
         # Authenticate
         res = self.session.post(url + '/login', login_data)
@@ -51,6 +51,7 @@ class Brain(object):
             cookieDict['connectionType'] = 'brains'
             cookieDict['channelNames'] = self.board.eeg_names
             cookieDict['access'] = access
+            cookieDict['game'] = game
             self.id = res['msg']
             cookieDict['id'] = self.id
 

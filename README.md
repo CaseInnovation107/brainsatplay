@@ -55,6 +55,9 @@ LOGIN_DATA = {
   # Guests: { 'guestaccess': True, 'guestId': '********'}
   # Authenticated Users: { 'username': '********', 'password': '********' }
 
+GAME = 'brainstorm'
+    # Current Games: brainstorm
+
 ACCESS = 'public'
   # Anyone Can Access Data (required to play games): 'public'
   # Only Interfaces with Same USERID Access Data: 'private'

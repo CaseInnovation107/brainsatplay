@@ -26,6 +26,9 @@ const app = express();
 const brains = new Map();
 const private_brains = new Map();
 const interfaces = new Map();
+const games = new Map();
+app.set('games', games);
+
 app.set('brains', brains);
 app.set('private_brains', private_brains);
 app.set('interfaces', interfaces);
@@ -128,15 +131,18 @@ server.on('upgrade', function (request, socket, head) {
     let userId;
     let type;
     let access;
+    let game;
 
     if (getCookie(request, 'id') != undefined) {
       userId =  getCookie(request, 'id')
       type = getCookie(request, 'connectionType')
       access = getCookie(request, 'access')
+      game = getCookie(request, 'game')
     } else{
       let protocols = request.headers['sec-websocket-protocol'].split(', ')
       userId =  protocols[0]
       type = protocols[1]
+      game = protocols[2]
     }
     
     if (!userId) {
@@ -147,9 +153,13 @@ server.on('upgrade', function (request, socket, head) {
 
     let command;
 
-    if (app.get('interfaces').has(userId) == true && type == 'interfaces') {
+    if (!app.get('games').has(game)){
+      app.get('games').set(game, {interfaces: new Map(), brains: new Map(), privateBrains: new Map()})
+    }
+
+    if (app.get('games').get(game).interfaces.has(userId) == true && type == 'interfaces') {
       command = 'interfaces'
-    } else if (type == 'brains' && ((access=="public" && app.get('brains').has(userId) == true) || (access=="private" && app.get('private_brains').has(userId) == true))){
+    } else if (type == 'brains' && ((access=="public" && app.get('games').get(game).brains.has(userId) == true) || (access=="private" && app.get('games').privateBrains.has(userId) == true))){
       command = 'close' 
     } else {
       command = 'init'
@@ -166,16 +176,20 @@ wss.on('connection', function (ws, command, request) {
   let type;
   let channelNames
   let access;
+  let game;
+
 
     if (getCookie(request, 'id') != undefined) {
       userId =  getCookie(request, 'id')
       type = getCookie(request, 'connectionType')
       access = getCookie(request, 'access')
       channelNames = getCookie(request, 'channelNames')
+      game = getCookie(request, 'game')
     } else if (request.headers['sec-websocket-protocol'] != undefined) {
       let protocols = request.headers['sec-websocket-protocol'].split(', ')
       userId =  protocols[0]
       type = protocols[1]
+      game = protocols[2]
     } else {
       ws.send('No userID Cookie (Python) or Protocol (JavaScript) specified')
     }
@@ -186,26 +200,26 @@ wss.on('connection', function (ws, command, request) {
     return
   }
   else if (command === 'interfaces'){
-    mirror_id = app.get(command).get(userId).connections.length
-    app.get(command).get(userId).connections.push(ws);
+    mirror_id = app.get('games').get(game).interfaces.get(userId).connections.length
+    app.get('games').get(game).interfaces.get(userId).connections.push(ws);
   }
   else if (command === 'init'){ 
     mirror_id = 0;
     if (access === 'public' || type === 'interfaces'){
-      app.get(type).set(userId, {connections: [ws], channelNames: channelNames, access: access});
+      app.get('games').get(game)[type].set(userId, {connections: [ws], channelNames: channelNames, access: access});
     } else {
-      app.get('private_brains').set(userId, {connections: [ws], channelNames: channelNames, access: access});
+      app.get('games').get(game).privateBrains.set(userId, {connections: [ws], channelNames: channelNames, access: access});
     }
   }
 
   if (access === 'private') {
     ws.send(JSON.stringify({
-      msg: "streaming data privately to " + userId + "'s interfaces",
+      msg: "streaming data privately to " + userId + "'s interfaces for "  + game,
       destination: 'init'
     }))
   } else {
     ws.send(JSON.stringify({
-      msg: "streaming " + userId + "'s data to the brainstorm",
+      msg: "streaming " + userId + "'s data to " + game,
       destination: 'init'
     }))
   }
@@ -218,7 +232,7 @@ wss.on('connection', function (ws, command, request) {
       destination: type
     });
 
-    app.get('interfaces').forEach(function each(clients, id) {
+    app.get('games').get(game).interfaces.forEach(function each(clients, id) {
       clients.connections.forEach(function allClients(client){
         if (client.readyState === WebSocket.OPEN) {
         // Broadcast new number of brains to all interfaces except yourself
@@ -242,15 +256,15 @@ wss.on('connection', function (ws, command, request) {
       if (obj.destination == 'initializeBrains'){
         
         // If added user is public or an interface, broadcast their presence
-        let brains = app.get('brains')
+        let brains = app.get('games').get(game).brains
         let channelNamesArray = []
-        let privateBrains = app.get('private_brains').has(userId)
+        let privateBrains = app.get('games').get(game).privateBrains.has(userId)
         let privateInfo = {};
 
         if (obj.public === false){
           if (privateBrains){
             privateInfo['id'] = userId 
-            privateInfo['channelNames'] = app.get('private_brains').get(userId).channelNames
+            privateInfo['channelNames'] = app.get('games').get(game).privateBrains.get(userId).channelNames
           }
         }
 
@@ -261,11 +275,11 @@ wss.on('connection', function (ws, command, request) {
         })
 
         let initStr = JSON.stringify({
-            msg: 'streaming data into the brainstorm',
+            msg: 'streaming data to ' +  game,
             nBrains: brains.size,
             privateBrains: privateBrains,
             privateInfo: privateInfo,
-            nInterfaces: app.get('interfaces').size,
+            nInterfaces: app.get('games').get(game).interfaces.size,
             ids: keys,
             channelNames: channelNamesArray,
             destination: 'init'
@@ -273,29 +287,12 @@ wss.on('connection', function (ws, command, request) {
 
         ws.send(initStr)
       }
-
-      if (obj.destination == 'chat'){
-        // Broadcast chat messages to all interfaces
-        app.get('interfaces').forEach(function each(clients, id) {
-          clients.connections.forEach(function allClients(client){
-            if (client.readyState === WebSocket.OPEN) {
-              client.send(str);
-            }
-          })
-        });
-        chat_db.insertOne(
-            { "msg" : obj.msg,
-              "sender" : userId,
-              "timestamp" : Date.now(),
-            }
-        )
-      } 
       
       if (obj.destination == 'bci'){
         
         // Broadcast brain signals to all interfaces if public
         // (or broadcast only to yourself)
-        app.get('interfaces').forEach(function each(clients, id) {
+        app.get('games').get(game).interfaces.forEach(function each(clients, id) {
           clients.connections.forEach(function allClients(client){
             if (client.readyState === WebSocket.OPEN) {
               if (access === 'public'){
@@ -314,13 +311,13 @@ wss.on('connection', function (ws, command, request) {
     ws.on('close', function () {
 
       if (access === 'public' || type === 'interfaces'){
-        if (app.get(type).get(userId).connections.length == 1){
-          app.get(type).delete(userId);
+        if (app.get('games').get(game)[type].get(userId).connections.length == 1){
+          app.get('games').get(game)[type].delete(userId);
         } else {
-          app.get(type).get(userId).connections.splice(mirror_id,1)
+          app.get('games').get(game)[type].get(userId).connections.splice(mirror_id,1)
         }
       } else {
-        app.get('private_brains').delete(userId);
+        app.get('games').get(game).privateBrains.delete(userId);
       }
     
       // Broadcast brains update to all interfacea
@@ -332,7 +329,7 @@ wss.on('connection', function (ws, command, request) {
           destination: type
         });
 
-        app.get('interfaces').forEach(function each(clients, id) {
+        app.get('games').get(game).interfaces.forEach(function each(clients, id) {
           clients.connections.forEach(function allClients(client){
             if (client.readyState === WebSocket.OPEN) {
               if (access === 'public' || access === undefined){
@@ -345,6 +342,11 @@ wss.on('connection', function (ws, command, request) {
             }
           })
         });
+
+        // Remove game from server if empty
+        if (app.get('games').get(game).interfaces.size == 0 && app.get('games').get(game).brains.size == 0 && app.get('games').get(game).privateBrains.size == 0){
+          app.get('games').delete(game)
+        }
     });
 });
 
