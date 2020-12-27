@@ -8,17 +8,19 @@ class BrainsAtPlay {
         } else{
             this.add(input)
         }
+        this.bufferSize = 1000;
         this.synchrony = 0;
         this.eegChannelCoordinates = this.getEEGCoordinates()
-        this.eegChannelsOfInterest = []
+        this.usedChannels = []
+        this.usedChannelNames = []
         this.network;
         this.me;
         this.username;
         this.nInterfaces = 0;
         this.public = true;
 
-        this.synchronyBuffer = new Array(100).fill(0)
-        this.synchronyChannels = new Array(channels).fill(0);
+        this.synchronyBuffer = new Array(this.bufferSize).fill(0)
+        this.synchronyChannels = [];
 
         this.generate = false;
         this.base_freq = 1;
@@ -67,7 +69,7 @@ class BrainsAtPlay {
             this.add('other'+i);
         }
         this.getMyIndex()
-        this.updateEEGChannelsOfInterest()
+        this.updateUsedChannels()
         this.username = "me"
         this.generate = true;
     }
@@ -80,6 +82,8 @@ class BrainsAtPlay {
             brain = new Brain(id,channelNames)
         }
         this.users.set(id, brain)
+        this.getMyIndex()
+        this.updateUsedChannels()
         this.initializeBuffer('focusBuffer')
         this.initializeBuffer('userVoltageBuffers')
     }
@@ -88,14 +92,6 @@ class BrainsAtPlay {
         this.users.delete(id)
         this.initializeBuffer('focusBuffer')
         this.initializeBuffer('userVoltageBuffers')
-    }
-
-    getMaxChannelNumber(){
-        let chansPerUser = []
-        this.users.forEach((brain) => {
-            chansPerUser.push(brain.numChannels)
-        })
-        return chansPerUser.reduce((acc,curr) => {return (Math.max(acc,curr))})
     }
 
 
@@ -110,15 +106,15 @@ class BrainsAtPlay {
         })
         var aSqD = sqD.reduce((a, b) => a + b, 0) / sqD.length;
         var stdDev = Math.sqrt(aSqD);
-        let relData = new Array(this.eegChannelsOfInterest.length).fill(0)
+        let relData = new Array(this.usedChannels.length).fill(0)
         let dev;
 
-        this.eegChannelsOfInterest.forEach((channel,ind) => {
+        this.usedChannels.forEach((channelInfo,ind) => {
             dev = (dataOfInterest[ind] - avg)/stdDev;
             if (isNaN(dev)){
-                relData[channel] = 0;
+                relData[channelInfo.index] = 0;
             } else {
-                relData[channel] = dev;
+                relData[channelInfo.index] = dev;
             }
         })
         return relData
@@ -126,33 +122,34 @@ class BrainsAtPlay {
 
     getPower(relative=false){
         let dataOfInterest = [];
-        let power = new Array(this.eegChannelsOfInterest.length).fill(NaN);
+        let power = new Array(this.usedChannels.length).fill(0);
+        let channelInd;
         if (this.me != undefined){
-        this.eegChannelsOfInterest.forEach((channel,ind) => {
-            if (this.userVoltageBuffers[this.me].length > ind){
-                // Calculate Average Power of Voltage Signal
-                let data = this.userVoltageBuffers[this.me][ind]
-                power[channel] = data.reduce((acc,cur) => acc + ((cur*cur)/2), 0)/data.length
-                dataOfInterest.push(power[channel])
-            }
+        this.usedChannels.forEach((channelInfo) => {
+            channelInd = this.usedChannelNames.indexOf(channelInfo.name)
+            // Calculate Average Power of Voltage Signal
+            let data = this.userVoltageBuffers[this.me][channelInd]
+            power[channelInd] = data.reduce((acc,cur) => acc + ((cur*cur)/2), 0)/data.length
+            dataOfInterest.push(power[channelInd])
         })
 
         if (relative){
             power = this.stdDev(dataOfInterest)
         }
-    }
 
+    }
         return power
     }
 
     getBandPower(band, relative=false){
         let dataOfInterest = [];
-        let bandpower = new Array(this.eegChannelsOfInterest.length).fill(NaN);
-        this.eegChannelsOfInterest.forEach((channel,ind) => {
-            if (this.userVoltageBuffers[this.me].length > ind){
-                bandpower[channel] = bci.bandpower(this.userVoltageBuffers[this.me][ind], this.samplerate, band, {relative: false});
-                dataOfInterest.push(bandpower[channel])
-            }
+        let bandpower = new Array(this.usedChannels.length).fill(0);
+        let channelInd;
+
+        this.usedChannels.forEach((channelInfo) => {
+            channelInd = this.usedChannelNames.indexOf(channelInfo.name)
+            bandpower[channelInd] = bci.bandpower(this.userVoltageBuffers[this.me][channelInd], this.samplerate, band, {relative: false});
+            dataOfInterest.push(bandpower[channelInd])
         })
 
         if (relative){
@@ -247,7 +244,7 @@ class BrainsAtPlay {
 
                 this.synchronyChannels = channelSynchrony.map((channelData) => {return channelData.reduce((a, b) => a + b, 0) / channelData.length})
             } else {
-                this.synchronyChannels = new Array(this.eegChannelsOfInterest.length).fill(0)
+                this.synchronyChannels = new Array(this.usedChannels.length).fill(0)
             }
 
             // Average Within Channels
@@ -258,7 +255,7 @@ class BrainsAtPlay {
                 this.synchronyBuffer.push(0)
             }        
         } else {
-            this.synchronyChannels = new Array(channels).fill(0);
+            this.synchronyChannels = new Array(this.usedChannels.length).fill(0);
             this.synchronyBuffer.push(this.synchronyChannels)
         }
         
@@ -277,23 +274,23 @@ class BrainsAtPlay {
             users = this.users.size;
         }
 
-        let perUser = Math.floor(pointCount/(users*channels));
+        // let perUser = Math.floor(pointCount/(users*this.usedChannels.length));
 
         for(user=0; user < users; user++){
             b.push([])
-            for(let chan=0; chan < channels; chan++){
-                b[user].push(new Array(perUser).fill(0.0));
+            for(let chan=0; chan < this.usedChannels.length; chan++){
+                b[user].push(new Array(this.bufferSize).fill(0.0));
             }
         }
 
-        let remainder = pointCount - channels*users*perUser
-            for (let chan = 0; chan < channels; chan++) {
-                for (user = 0; user < users; user++)
-                    if (remainder > 0) {
-                        remainder--;
-                        b[user][chan].push(0.0)
-                    }
-            }
+        // let remainder = pointCount - this.usedChannels.length*users*perUser
+        //     for (let chan = 0; chan < this.usedChannels.length; chan++) {
+        //         for (user = 0; user < users; user++)
+        //             if (remainder > 0) {
+        //                 remainder--;
+        //                 b[user][chan].push(0.0)
+        //             }
+        //     }
         
         if (buffer != undefined){
             this[buffer] = b;
@@ -324,12 +321,11 @@ class BrainsAtPlay {
     // }
 
     generateVoltageStream(){
-            let channels = this.eegChannelsOfInterest.length
 
             this.users.forEach((user) => {
-                let signal = new Array(channels);
+                let signal = new Array(this.usedChannels.length);
                 // let amp = Math.random()
-                for (let channel =0; channel < channels; channel++) {
+                for (let channel =0; channel < this.usedChannels.length; channel++) {
                     signal[channel] = bci.generateSignal([Math.random()], [this.base_freq+Math.random()*40], this.samplerate, (1/this.base_freq));
                 }
         
@@ -366,68 +362,46 @@ class BrainsAtPlay {
     }
 
     updateBuffer(source='brains',buffer='userVoltageBuffers'){
-        let userInd;
-
-        if (source == 'brains'){
-            userInd = 0;
+            let channelInd;
+            let userInd = 0;
             this.users.forEach((brain) => {
                 brain.buffer.forEach((channelData, channel) => {
-                    let sustain;
-                    if(this[buffer][userInd][channel] != undefined){
-                        if (this[buffer][userInd][channel].every(item => item === 0)){
-                            sustain = this[buffer][userInd][channel].length;
+                    channelInd = this.usedChannelNames.indexOf(brain.channelNames[channel])
+                        if (source == 'brains'){
+                            if (channelData.length != 0){
+                                channelData = brain.buffer[channel].shift()
+                            } else {
+                                channelData = 0
+                            }
                         } else {
-                            sustain = SIGNAL_SUSTAIN
+                            channelData = source[channel]
                         }
-                    if (channelData.length != 0){
-                        channelData = new Array(sustain).fill(brain.buffer[channel].shift())
+                    if (source == 'brains'){
+                        this[buffer][userInd][channelInd].splice(0,1)
+                        this[buffer][userInd][channelInd].push(channelData)
                     } else {
-                        channelData = new Array(sustain).fill(0)
+                        if (userInd == 0) {
+                        if (this.me != undefined){      
+                            this[buffer][this.me][channelInd].splice(0,1)
+                            this[buffer][this.me][channelInd].push(channelData)
+                        } else {
+                            this[buffer][0][channelInd].splice(0,1)
+                            this[buffer][0][channelInd].push(channelData)
+                        }
                     }
-                    this[buffer][userInd][channel].splice(0,sustain)
-                    this[buffer][userInd][channel].push(...channelData)
-                }
-                }
-                )
-                userInd++;
-            })
-        } else {
-            userInd = this.me 
-            let userData;
-            if (userInd != undefined){      
-                userData = this[buffer][userInd]
-            } else {
-                userData = this[buffer][0];
-            } 
-
-            userData.forEach((channelData,channel) => {
-                if (channelData.length != 0){
-                    channelData = new Array(SIGNAL_SUSTAIN).fill(source[channel])
-                } else {
-                    channelData = new Array(SIGNAL_SUSTAIN).fill(0)
-                }
-
-
-                if (userInd != undefined){      
-                    this[buffer][userInd][channel].splice(0,SIGNAL_SUSTAIN)
-                    this[buffer][userInd][channel].push(...channelData)
-                } else {
-                    this[buffer][0][channel].splice(0,SIGNAL_SUSTAIN)
-                    this[buffer][0][channel].push(...channelData)
-                }
+                    }
+                })
+                userInd++
             })
         }
-    }
 
-    BufferToWebGL(buffer='userVoltageBuffers'){
+    flatten(buffer='userVoltageBuffers', normalize=false){
+            let _temp = this[buffer]; 
+            if (normalize){
+                _temp = this.normalizeUserBuffers(this[buffer]);
+            }
             // Upsample Buffer
-            return new Float32Array([...this[buffer].flat(2)])
-    }
-
-    BufferToWebGL_Normalized(buffer='userVoltageBuffers'){
-        let _temp = this.normalizeUserBuffers(this[buffer]);
-            // Upsample Buffer
-        return new Float32Array([..._temp.flat(2)])
+            return new Float32Array([..._temp.flat(2)])
     }
 
     normalizeUserBuffers(buffer) {
@@ -435,7 +409,7 @@ class BrainsAtPlay {
             return userData.map((channelData) => {
                 let max = Math.max(...channelData)
                 let min = Math.min(...channelData)
-                let scaling = (window.innerHeight/6)/channels;
+                let scaling = (window.innerHeight/6)/this.usedChannels.length;
                 if (min != max){
                     return channelData.map((val) => {
                         var delta = max - min;
@@ -450,31 +424,19 @@ class BrainsAtPlay {
         return _temp
     }
 
-    updateEEGChannelsOfInterest() {
-        this.eegChannelsOfInterest = []
-        let myBrain;        
-        Object.keys(this.eegChannelCoordinates).forEach((name,ind) => {
-            myBrain = this.users.get(this.username)
-            if (myBrain == undefined){
-                myBrain = this.users.get('me')
-            }
-            
-            // Extract My EEG Channels Of Interest
-            if (myBrain != undefined){
-                if (myBrain.channelNames.includes(name)){
-                    this.eegChannelsOfInterest.push(ind)
-                }
-            } 
+    updateUsedChannels() {
+        this.usedChannels = [];
+        this.usedChannelNames = [];
 
+        // Define all used channel indices
+        Object.keys(this.eegChannelCoordinates).forEach((name,ind) => {
             // Extract All Used EEG Channels
-            else {
-                this.users.forEach((user) => {
-                    if (user.channelNames.includes(name)){
-                        this.eegChannelsOfInterest.push(ind)
-                    }
-                })
-                this.eegChannelsOfInterest = this.eegChannelsOfInterest.filter((v, i, a) => a.indexOf(v) === i)
-            }
+            this.users.forEach((user) => {
+                if (user.channelNames.includes(name) && this.usedChannelNames.indexOf(name) == -1){
+                    this.usedChannels.push({name:name, index:ind})
+                    this.usedChannelNames.push(name)
+                }
+            })
         })
     }
 
@@ -511,8 +473,6 @@ class BrainsAtPlay {
             if (this.users.get(obj.id) != undefined){
                 this.users.get(obj.id).streamIntoBuffer(obj.data)
             } 
-            updateChannels(this.getMaxChannelNumber())
-
         } else if (obj.destination == 'init'){
 
             this.users.clear()
@@ -538,7 +498,7 @@ class BrainsAtPlay {
             }
 
             this.generate = false;
-            this.updateEEGChannelsOfInterest()
+            this.updateUsedChannels()
             this.initializeBuffer('userVoltageBuffers')
             this.nInterfaces = obj.nInterfaces;
             this.getMyIndex()
@@ -569,7 +529,7 @@ class BrainsAtPlay {
                     }
                 }
                 this.initializeBuffer('userVoltageBuffers')
-                this.updateEEGChannelsOfInterest()
+                this.updateUsedChannels()
             }
 
             this.getMyIndex()

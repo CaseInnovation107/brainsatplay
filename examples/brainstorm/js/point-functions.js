@@ -32,9 +32,7 @@ function reducePointCount(pointCloud,desiredCount){
 
 function createPointCloud(pointFunction, pointCount) {
     let pointCloud = [];
-    if (pointFunction == 'brain') {
-        pointCloud = getBrain()
-    } else if (pointFunction == 'brains'){
+    if (pointFunction == 'brains'){
             let oneBrain = reducePointCount(brainVertices, Math.floor((brainVertices.length/3)/brains.users.size))
             let dim_size = Math.ceil(Math.sqrt(brains.users.size));
     
@@ -112,7 +110,6 @@ function createPointCloud(pointFunction, pointCount) {
             }
         }
         
-        // return pointCloud
         return pointCloud;
     }
 
@@ -263,60 +260,52 @@ const shapes = {
     },
 };
 
-async function getBrain() {
-    const response1 = await fetch('https://raw.githubusercontent.com/GarrettMFlynn/webgl-experiments/main/brain_in_webgl/public/lh.pial.json');
-    const json1 = await response1.json();
-    const vertexData1 = json1.position
-
-    const response2 = await fetch('https://raw.githubusercontent.com/GarrettMFlynn/webgl-experiments/main/brain_in_webgl/public/rh.pial.json');
-    const json2 = await response2.json();
-    const vertexData2 = json2.position
-    const vertices = [...vertexData1, ...vertexData2]
-
-    for(var i = 0, length = vertices.length; i < length; i++){
-        vertices[i] = vertices[i]/75;
-        }
-        
-    return brainpoints
-}
-
-
 function getChannels(pointCloud, pointCount, numUsers) {
-    let channel_inds = [0];
-    let usr_inds = [0];
-    let factor = (pointCount/((window.innerWidth)*numUsers*channels))
     let user = -1;
-    let z;
-    let z_iter = ((window.innerHeight/4)/(channels/2))
     let y;
-    let point1;
-    let point2;
+    let z;
+    let channel_trigger = brains.bufferSize
+    let user_trigger = brains.bufferSize*brains.usedChannels.length
+    let currDataPoints = brains.bufferSize*brains.usedChannels.length*numUsers
+    let upsamplingFactor = Math.floor(pointCount/(currDataPoints)) // account for doubling (due to line drawing)
 
-    let shift_trigger = Math.floor(pointCount/(2*numUsers*channels));
-    let user_trigger = Math.floor(pointCount/(2*numUsers));
+    let drawArea = {w: (0.8*canvas.getBoundingClientRect().width), h: (0.8*canvas.getBoundingClientRect().height)}
+    let z_iter = ((drawArea.h)/(2*brains.usedChannels.length))
+    let y_iter = (drawArea.w/ (channel_trigger*upsamplingFactor))
+    // let channel_trigger = Math.floor(pointCount/(2*brains.users.size*brains.usedChannels.length));
+    // let user_trigger = Math.floor(pointCount/(2*brains.users.size));
 
-    for (let i = 0; i < ((pointCount/2)-1); i++) {
 
-        if (i % shift_trigger == 0) {
-                channel_inds.push(i * 3);
-                z += z_iter;
-                y = -((window.innerWidth)/4)*factor;
+   // factor must be odd
+    if (upsamplingFactor%2 == 0){
+        upsamplingFactor -= 1;
+    }
+
+    for (let i = 0; i < (currDataPoints/2)-1; i++) {
+
+        // Reset channel
+        if (i*2 % channel_trigger == 0){
+            z += z_iter;
+            y = -drawArea.w/4;
         }
 
-        if (i % user_trigger == 0){
-            z = -(z_iter)*(channels/2) + z_iter/2;
-            y = -((window.innerWidth)/4)*factor;
-            usr_inds.push(i * 3)
+        // reset user
+        if (i*2 % user_trigger == 0){
+            z = -(z_iter)*(brains.usedChannels.length/2) + z_iter/2;
+            y = -drawArea.w/4;
             user++;
         }
 
-        point1 = [user*1,                                 // Separate Each User
-                    (y) / (factor/.8),  // Length of Channels Display
-                    z];    // Move to Correct Channel Position
-        point2 = [user*1, ((y+1)) / (factor/.8), z];
-        pointCloud.push(...point1);
-        pointCloud.push(...point2);
-        y++;
+
+        for (j = 0; j < upsamplingFactor; j++){
+                pointCloud.push(...[1.0*user,y,z]) 
+                pointCloud.push(...[1.0*user,y+y_iter,z])
+                y += y_iter;
+         }
+    }
+
+    while (pointCloud.length != pointCount * 3){
+        pointCloud.push(NaN)
     }
 
     return pointCloud

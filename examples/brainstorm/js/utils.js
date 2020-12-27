@@ -33,8 +33,8 @@ function switchToChannels(pointCount,users){
     // Create signal dashboard
     vertexHome = getChannels([],pointCount,users);
     let ease = true;
-    let rotation = false;
-    let zoom = false;
+    let rotation = true;
+    let zoom = true;
 
     return [vertexHome, viewMatrix, ease, rotation, zoom]
 }
@@ -64,7 +64,7 @@ function stateManager(forceUpdate=false){
     if (scenes[prevState].shapes.includes('channels')) {
         brains.initializeBuffer(buffer='focusBuffer')
         brains.initializeBuffer(buffer='userVoltageBuffers')
-        updateBufferData(attribs,'z_displacement',brains.BufferToWebGL())
+        updateBufferData(attribs,'z_displacement',convertToWebGL(brains.flatten(buffer='userVoltageBuffers', true), 0))
     }
 
     // set up variables for new state
@@ -144,7 +144,7 @@ function stateManager(forceUpdate=false){
     if (!['z_displacement'].includes(scenes[state].effect) && dispBuffer != undefined){
         brains.initializeBuffer(buffer='focusBuffer')
         brains.initializeBuffer(buffer='userVoltageBuffers')
-        updateBufferData(attribs,'z_displacement',brains.BufferToWebGL(buffer='focusBuffer'))
+        updateBufferData(attribs,'z_displacement',convertToWebGL(brains.flatten(buffer='focusBuffer', false),0))
     }
 
 
@@ -172,7 +172,7 @@ function updateChannels(newChannels) {
         
         if (channels != newChannels) {
             channels = newChannels;
-        SIGNAL_SUSTAIN = Math.round(SIGNAL_SUSTAIN_ORIGINAL/channels)
+        SIGNAL_SUSTAIN = Math.round(SIGNAL_SUSTAIN_ORIGINAL/brains.usedChannels.length)
 
         if (SIGNAL_SUSTAIN%2 == 0){
             SIGNAL_SUSTAIN += 1;
@@ -189,12 +189,14 @@ function updateChannels(newChannels) {
             }
         }
 
-        passedEEGCoords = eegCoords.map((arr,ind) => {
-            if (ind >= channels){
-                return [NaN,NaN,NaN]
+        let passedEEGCoords = [];
+        Object.keys(brains.eegChannelCoordinates).forEach((name) => {
+            if (brains.usedChannelNames.indexOf(name) != -1){
+                passedEEGCoords.push(brains.eegChannelCoordinates[name])
             } else {
-                return arr
-            } 
+                passedEEGCoords.push([NaN,NaN,NaN])
+
+            }
         })
 
         gl.uniform3fv(uniformLocations.eeg_coords, new Float32Array(passedEEGCoords.flat()));
@@ -311,7 +313,7 @@ function updateUI(){
             document.getElementById('userinfo').style.opacity = '100%'
             document.getElementById('groupdynamics').style.opacity = '100%'
             document.getElementById('userinfo').style.pointerEvents = 'auto'
-            if (brains.users.size <= 2){
+            if (brains.users.size < 2){
                 document.getElementById('groupdynamics').style.opacity = '25%'
                 document.getElementById('groupdynamics').style.pointerEvents = 'none'
                 document.getElementById('userinfo').style.opacity = '25%'
@@ -330,21 +332,22 @@ function updateUI(){
                 if (scenes[state].effect == 'projection'){
 
                     dynamicSignalArray.push('voltage')
-                    document.getElementById('synchrony').style.opacity = '100%'
-                    document.getElementById('synchrony').style.pointerEvents = 'auto'
-
                     let prevSig = document.getElementById('signal-type').innerHTML
                     if (prevSig != 'synchrony'){
                         scenes[state].signaltype = 'synchrony'; 
                         document.getElementById('signal-type').innerHTML = 'synchrony'; 
                         newSignalType = true;
                     }
-                }
-                else if (scenes[state].effect == 'z_displacement'){
-                    document.getElementById('synchrony').style.opacity = '100%'
-                    document.getElementById('synchrony').style.pointerEvents = 'auto'
+                } else if (scenes[state].effect == 'z_displacement'){
                     document.getElementById('voltage').style.opacity = '100%'
                     document.getElementById('voltage').style.pointerEvents = 'auto'
+                }
+
+                if (brains.users.size < 2){
+                    dynamicSignalArray.push('synchrony')
+                } else {
+                    document.getElementById('synchrony').style.opacity = '100%'
+                    document.getElementById('synchrony').style.pointerEvents = 'auto'
                 }
 
             } else {
@@ -356,11 +359,6 @@ function updateUI(){
             dynamicSignalArray.forEach((id) => {
                     document.getElementById(id).style.opacity = opacity
                     document.getElementById(id).style.pointerEvents = pointer
-            })
-
-            dynamicSignalArray.forEach((id) => {
-                document.getElementById(id).style.opacity = '0%'
-                document.getElementById(id).style.pointerEvents = 'none'
             })
         } else {
             document.getElementById('brain').style.opacity = '100%'
@@ -526,16 +524,29 @@ function easeVertices() {
     // Ease points around
     if (ease){
         let count = 0;
+        let home;
+        let curr;
         for (let point =0; point < vertexHome.length/3; point++){
             for (let ind=0;ind < 3; ind++) {
-                    diff = vertexHome[3 * point + ind] - vertexCurr[3 * point + ind]
-                    if (Math.abs(diff) <= epsilon) {
+                    home = vertexHome[3 * point + ind];
+                    curr = vertexCurr[3 * point + ind]
+                    if (!isNaN(home) && !isNaN(curr)){
+                    if (Math.abs(home - curr) <= epsilon) {
                         vertexCurr[3 * point + ind] = vertexHome[3 * point + ind];
                         count++
-                    } else {
-                        vertexCurr[3 * point + ind] += scenes[state].ease * diff;
                     }
-                }}
+                    else {
+                        vertexCurr[3 * point + ind] += scenes[state].ease * (home - curr);
+                    }
+                } else{
+                    if (isNaN(home)){
+                        vertexCurr[3 * point + ind] = NaN;
+                    } else {
+                        vertexCurr[3 * point + ind] = (Math.random()-0.5)*GENERIC_ZOOM;
+                    }
+                }
+            }
+        }
 
         updateBufferData(attribs,'position',vertexCurr)
                 
@@ -564,13 +575,13 @@ function lagDrawMode() {
 }
 
 function updateColorsByChannel(new_sync) {
-        let relSignal = new Array(passedEEGCoords.length).fill(NaN);
-
+        let relSignal = new Array(Object.keys(brains.eegChannelCoordinates).length).fill(NaN);
         if (['projection','z_displacement'].includes(scenes[state].effect)){
             if (scenes[state].signaltype == 'synchrony') {
-            brains.eegChannelsOfInterest.forEach((channel,ind) => {
-                relSignal[channel] = new_sync[ind]; // absolute
-            })} else if (scenes[state].signaltype == 'voltage'){
+                brains.usedChannels.forEach((channelInfo,ind) => {
+                    relSignal[channelInfo.index] = new_sync[ind]; // absolute
+                })
+            } else if (scenes[state].signaltype == 'voltage'){
                 relSignal = brains.getPower(relative=true) // relative
             } else if (['delta','theta','alpha','beta','gamma'].includes(scenes[state].signaltype)){
                 relSignal = brains.getBandPower(scenes[state].signaltype, relative=true) // relative
@@ -583,16 +594,14 @@ function updateColorsByChannel(new_sync) {
         
         if (['z_displacement'].includes(scenes[state].effect)) {
                 if (scenes[state].signaltype == 'voltage'){
-                    updateBufferData(attribs,'z_displacement',brains.BufferToWebGL_Normalized())
+                    updateBufferData(attribs,'z_displacement',convertToWebGL(brains.flatten(buffer='userVoltageBuffers', true),0))
                 } else {
                     let relSignalOfInterest = [];
-                    relSignal.forEach((data,channel)=> {
-                        if (brains.eegChannelsOfInterest.includes(channel)){
-                            relSignalOfInterest.push(data)
-                        }
+                    brains.usedChannels.forEach((channelInfo)=> {
+                        relSignalOfInterest.push(relSignal[channelInfo.index])
                     })
                     brains.updateBuffer(source=relSignalOfInterest,buffer='focusBuffer')
-                    updateBufferData(attribs,'z_displacement',brains.BufferToWebGL(buffer='focusBuffer'))
+                    updateBufferData(attribs,'z_displacement',convertToWebGL(brains.flatten(buffer='focusBuffer', false),0))
                 }
         }
 
@@ -703,3 +712,26 @@ function brainDependencies(updateArray){
 }
 })
 }
+
+
+ // WebGL Conversion
+
+ function convertToWebGL(flattenedArray, filler){
+     let currDataPoints = flattenedArray.length
+     let upsamplingFactor = Math.floor(pointCount/currDataPoints)
+
+    // factor must be odd
+     if (upsamplingFactor%2 == 0){
+         upsamplingFactor += 1;
+     }
+
+     let newArray = new Array(pointCount).fill(filler)
+
+     for (i = 0; i < currDataPoints; i++){
+         for (j = 0; j < upsamplingFactor; j++){
+            newArray[(i*upsamplingFactor) + j] = flattenedArray[i]
+         }
+     }
+      
+     return newArray
+ }

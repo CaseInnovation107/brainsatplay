@@ -352,6 +352,7 @@
     let diff_total;
     let forceSink;
     let messageStartTime;
+    aspectChange = [1,1];
 
     // Set User Interactions
     let devTools = false;
@@ -373,12 +374,6 @@
     pointCount = brainVertices.length / 3;
 
     // Instantiate BrainsAtPlay Object
-    let channels = 16;
-    let SIGNAL_SUSTAIN_ORIGINAL = 100;
-    let SIGNAL_SUSTAIN = Math.round(SIGNAL_SUSTAIN_ORIGINAL/channels);
-    if (SIGNAL_SUSTAIN%2 == 0){
-            SIGNAL_SUSTAIN += 1;
-    }
     let url;
     let option = 'local';
     if (option  === 'local'){
@@ -402,7 +397,7 @@
 // Initialize Vertex Attributes
     let arrays = {
         position: {numComponents: 3, data: vertexCurr},
-        z_displacement: {numComponents: 1, data: brains.BufferToWebGL()},
+        z_displacement: {numComponents: 1, data: convertToWebGL(brains.flatten(buffer='userVoltageBuffers'))},
     }
     let attribs;
     gl, program, attribs = initializeAttributes(gl, program, arrays)
@@ -479,10 +474,11 @@
         mat4.multiply(mvpMatrix, projectionMatrix, mvMatrix)
 
         // Update Uniforms
+        aspectChange = [(canvas.width)/(originalAspectX),(canvas.height)/(originalAspectY)]
         gl.uniformMatrix4fv(uniformLocations.matrix, false, mvpMatrix)
         gl.uniform1f(uniformLocations.u_time, (Date.now()-startTime)/1000);
         gl.uniform1f(uniformLocations.synchrony, brains.synchrony);
-        gl.uniform2fv(uniformLocations.aspectChange, [(canvas.width)/(originalAspectX),(canvas.height)/(originalAspectY)]);
+        gl.uniform2fv(uniformLocations.aspectChange, aspectChange);
 
         if (mouseDistort){
         gl.uniform2fv(uniformLocations.mousePos, [(x - (canvas.width/2))/2,((canvas.height/2) - y)/2]);
@@ -496,6 +492,7 @@
         easeVertices()
 
         // Draw
+        // console.log(vertexCurr)
         gl.drawArrays(scenes[renderState].render, 0, vertexCurr.length / 3);
 
         // Update states for next animation loop
