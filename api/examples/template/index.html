@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <meta charset=utf-8>
+    <meta http-equiv=X-UA-Compatible content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta property="og:title" content="Brains@Play API Template" />
+    <meta property="og:type" content="website" />
+    <!-- <meta property="og:image" content="https://brainsatplay.com/sdk/examples/brainstorm.png" /> -->
+    <meta property="og:description" content="A template for using the Brains@Play API (brainsatplay)" />
+    <meta property="og:url" content="https://brainsatplay.com/sdk/examples/template" />
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@brainsatplay">
+    <meta name="twitter:creator" content="@brainsatplay">
+    <meta name="twitter:domain" content="brainsatplay.com">
+    <meta name="twitter:title" content="Brains@Play API Template">
+    <meta name="twitter:url" content="https://brainsatplay.com/sdk/examples/template">
+    <meta name="twitter:description" content="A template for using the Brains@Play API (brainsatplay)">
+    <!-- <meta name="twitter:image:src" content="https://brainsatplay.com/sdk/examples/brainstorm.png"> -->
+    <title>Brains@Play API Template</title>
+    
+    <script type="text/javascript" src="../../src/Brain.js"></script>
+    <script type="text/javascript" src="../../src/nBrains.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bcijs@1.8.0/dist/bci.min.js"></script>
+</head>
+
+<body style="overflow:none">
+
+    <div style="
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100vw; 
+    height: 100vh; 
+    /* text-align: center; */
+    color : white;
+    background: black;
+    font-family: Lato, sans-serif;
+    ">
+        <div>
+            <h1>Synchrony</h1>
+            <p id="synchrony">Initializing...</p>
+            <br/>
+            <button onclick="window.location.href='/'">Back to Examples</button>
+            <p><a href="https://github.com/brainsatplay/brainsatplay/brainsatplay/tree/main/api/examples/template" style="font-size: 80%">Source Code</a></p>
+        </div>
+    </div>
+
+<script>
+
+    let url;
+    let option = 'local';
+    if (option  === 'local'){
+        url = new URL('http://localhost');
+    } else if (option === 'server'){
+        url = new URL('https://brainsatplay.azurewebsites.net/');
+    }
+    let brains = new BrainsAtPlay()
+    brains.simulate(2); // simulated data remains local on Interfaces
+
+    function animate() {
+        requestAnimationFrame(animate)
+        brains.update()
+        if (brains.synchrony != 0){
+            document.getElementById("synchrony").innerHTML = brains.synchrony.toFixed(5)
+        }
+    };
+    animate()
+
+</script>
+
+</body>
+</html>

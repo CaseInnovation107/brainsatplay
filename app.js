@@ -13,7 +13,7 @@ const WebSocket = require('ws');
 
 
 // Settings
-let example = 'brainstorm'
+// let example = 'basic'
 let protocol = 'http';
 const url = 'localhost'
 var port = normalizePort(process.env.PORT || '80');
@@ -32,7 +32,7 @@ app.set('games', games);
 app.set('brains', brains);
 app.set('private_brains', private_brains);
 app.set('interfaces', interfaces);
-app.set('example', example);
+// app.set('example', example);
 
 
 //CORS
@@ -103,8 +103,8 @@ app.use(function(err, req, res, next) {
 });
 
 // Static Middleware
-app.use(express.static(path.join(__dirname, 'examples',example)));
-app.use(favicon(path.join(__dirname, 'examples', example, 'favicons','favicon.ico')));
+app.use(express.static(path.join(__dirname, 'api')));
+// app.use(favicon(path.join(__dirname, 'examples', example, 'favicons','favicon.ico')));
 
 // Setting the port
 app.set('port', port);

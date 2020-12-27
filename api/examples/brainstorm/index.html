@@ -23,8 +23,8 @@
     <link rel=icon href=favicons/favicon.ico>
     <link rel="stylesheet" type="text/css" href="css/brainstorm.css"/>
     <script type="text/javascript" src="js/visbrain.js"></script>
-    <script type="text/javascript" src="classes/Brain.js"></script>
-    <script type="text/javascript" src="classes/nBrains.js"></script>
+    <script type="text/javascript" src="../../src/Brain.js"></script>
+    <script type="text/javascript" src="../../src/nBrains.js"></script>
     <script type="text/javascript" src="js/interaction.js"></script>
     <script type="text/javascript" src="js/utils.js"></script>
     <script type="text/javascript" src="js/point-functions.js"></script>
@@ -211,6 +211,7 @@
             <li><p>You start the experience by viewing a synthetic stream of two brains. Under <strong>Connection Info</strong>, press <strong>Connect</strong> to enter a network of real users and their brains.</p></li>
             <li><p>Copy your <strong>ID</strong> to our <a href="https://github.com/brains-at-play/brains-at-play">Python streamer</a> and send your data using OpenBCI or Neurosity headsets.</p></li>
         </ol>
+        <button onclick="window.location.href='/'">Back to Examples</button>
         </div>
 
     <div id="chat">
@@ -492,7 +493,6 @@
         easeVertices()
 
         // Draw
-        // console.log(vertexCurr)
         gl.drawArrays(scenes[renderState].render, 0, vertexCurr.length / 3);
 
         // Update states for next animation loop
