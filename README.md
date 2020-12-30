@@ -1,8 +1,8 @@
-# brains-at-play
+# brainsatplay
 
 A full-stack framework for developing multiplayer brain-computer interface (BCI) applications for the web.
 
-[![Github badge](https://img.shields.io/badge/github-source_code-blue.svg?logo=github&logoColor=white)](https://github.com/brains-at-play/brains-at-play)
+[![Github badge](https://img.shields.io/badge/github-source_code-blue.svg?logo=github&logoColor=white)](https://github.com/brainsatplay/brainsatplay)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 [Getting Started](#getting-started) | [Examples](#examples) | [Support](#Support) | [Acknowledgements](#Acknowledgments)
@@ -79,13 +79,11 @@ If you are having issues, please email Garrett Flynn at gflynn@usc.edu
 
 ## Acknowledgments
 ### Funding
-**brains-at-play** was supported by [OpenBCI](https://openbci.com/) and [USC Visions and Voices](https://visionsandvoices.usc.edu/) for the production of [Livewire: A Stimulating Night of Neurotechnology](https://visionsandvoices.usc.edu/eventdetails/?event_id=33741435186601&s_type=&s_genre=) 
+**brainsatplay** was supported by [OpenBCI](https://openbci.com/) and [USC Visions and Voices](https://visionsandvoices.usc.edu/) for the production of [Livewire: A Stimulating Night of Neurotechnology](https://visionsandvoices.usc.edu/eventdetails/?event_id=33741435186601&s_type=&s_genre=) 
 
 ### Code
 #### JavaScript (Front-End)
 - [bci.js](https://bci.js.org/)
-- [jQuery](https://jquery.com/)
-- [Font Awesome](https://fontawesome.com/)
 #### JavaScript (Back-End)
 - [NPM](https://www.npmjs.com/) and [Node](https://nodejs.org/en/).
 - [Express](https://expressjs.com/)
