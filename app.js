@@ -13,7 +13,6 @@ const WebSocket = require('ws');
 
 
 // Settings
-// let example = 'basic'
 let protocol = 'http';
 const url = 'localhost'
 var port = normalizePort(process.env.PORT || '80');
@@ -103,8 +102,8 @@ app.use(function(err, req, res, next) {
 });
 
 // Static Middleware
-app.use(express.static(path.join(__dirname, 'api')));
-// app.use(favicon(path.join(__dirname, 'examples', example, 'favicons','favicon.ico')));
+// app.use(express.static(path.join(__dirname, 'public')));
+// app.use(favicon(path.join(__dirname, 'public', 'favicons','favicon.ico')));
 
 // Setting the port
 app.set('port', port);

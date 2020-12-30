@@ -8,12 +8,17 @@ module.exports.getSubmissions = async (req, res) => {
 
     let client = req.app.get('mongo_client')
     const db = client.db(dbName);
-    let request = Object.keys(req.body)[0]
     var submissionJSON = {};
     var docArray = [];
-    await db.collection('submissions').find().forEach(doc => {docArray.push(doc), submissionJSON[doc['game-name']] = doc});
 
-    if ("gamename" == request){
+    if (req.body.filter === 'approved'){
+      await db.collection('submissions').find({approved: true}).forEach(doc => {docArray.push(doc), submissionJSON[doc['game-name']] = doc});
+    } else {
+      await db.collection('submissions').find().forEach(doc => {docArray.push(doc), submissionJSON[doc['game-name']] = doc});
+    }
+
+    if (docArray.length > 0){
+    if (req.body.get !== 'all'){
     getSubmissionFiles(docArray,submissionJSON,db,['game-image', 'additional-images']).then(output => {
       if (Object.keys(output).length === 0){
         res.send({'error':'no results'})
@@ -23,24 +28,22 @@ module.exports.getSubmissions = async (req, res) => {
     }).catch(error => {
       res.send({'error':'error'})
     });
-  }
-  if ("request" == request){
-
-      if (req.body.request == "all"){
-
+  } else {
         getSubmissionFiles(docArray,submissionJSON,db,['game-image']).then(output => {
           if (Object.keys(output).length === 0){
             res.send({'error':'no results'})
-          } else {
+          }
+          else {
             res.send(output)
           }
         }).catch(error => {
           res.send({'error':'error'})
         });
       }
-  }
-
-  };
+} else {
+  res.send({'error':'no results'})
+}
+}
 
 async function getSubmissionFiles(docs, subJSON, db,fields) {
 
