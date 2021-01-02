@@ -19,7 +19,7 @@ function setup() {
   connectToggle.mousePressed(() => {
     game.login({
           'guestaccess': true
-        }),
+        }, url),
       game.connect(),
       disconnectToggle.show(),
       connectToggle.hide()
