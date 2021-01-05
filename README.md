@@ -1,6 +1,6 @@
 # brainsatplay
 
-A full-stack framework for developing web-based BCI systems.
+A full-stack framework for developing web-based BCI applications.
 
 [![Github badge](https://img.shields.io/badge/github-source_code-blue.svg?logo=github&logoColor=white)](https://github.com/brainsatplay/brainsatplay)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
