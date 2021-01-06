@@ -159,7 +159,7 @@ server.on('upgrade', function (request, socket, head) {
 
     if (app.get('games').get(game).interfaces.has(userId) == true && type == 'interfaces') {
       command = 'interfaces'
-    } else if (type == 'brains' && ((access=="public" && app.get('games').get(game).brains.has(userId) == true) || (access=="private" && app.get('games').privateBrains.has(userId) == true))){
+    } else if (type == 'brains' && ((access=="public" && app.get('games').get(game).brains.has(userId) == true) || (access=="private" && app.get('games').get(game).privateBrains.has(userId) == true))){
       command = 'close' 
     } else {
       command = 'init'

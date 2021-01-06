@@ -50,8 +50,8 @@ LOGIN_DATA = {
   # Guests: { 'guestaccess': True, 'guestId': '********'}
   # Authenticated Users: { 'username': '********', 'password': '********' }
 
-GAME = 'brainstorm'
-    # Current Games: brainstorm
+GAME = 'template'
+    # Current Games: template, brainstorm
 
 ACCESS = 'public'
   # Anyone Can Access Data (required to play games): 'public'
