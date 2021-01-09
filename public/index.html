@@ -18,11 +18,12 @@
     <meta name="twitter:description" content="A project template using Brains@Play (brainsatplay) software.">
     <meta name="twitter:image:src" content="https://brainsatplay.com/docs/examples/brainstorm.png">
     <title>Brains@Play Project Template</title>
+    <link rel=icon href=favicons/favicon.ico>
 
     <script src="p5.js"></script>
     <script src="p5.sound.min.js"></script>
-    <script src="BrainsAtPlay.js"></script>
-        <script src="bci.min.js"></script>
+    <script type="text/javascript" src="../../src/BrainsAtPlay.js"></script>
+    <script src="bci.min.js"></script>
 
     <link rel="stylesheet" type="text/css" href="style.css">
     <meta charset="utf-8">
@@ -53,17 +54,7 @@
             </svg>
         </a>
     </div>
-    <script>
-
-    let option = 'local';
-    let url;
-    if (option  === 'local'){
-        url = 'http://localhost';
-    } else if (option === 'server'){
-        url = 'https://brainsatplay.azurewebsites.net/';
-    }
     
-    </script>
     <script src="sketch.js"></script>
   
 
