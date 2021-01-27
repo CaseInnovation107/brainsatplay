@@ -9,8 +9,12 @@ const logger = require('morgan');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const hbs = require('express-handlebars');
-const WebSocket = require('ws');
 
+// BCI Stuff
+const WebSocket = require('ws');
+// Muse
+// const noble = require('noble');
+// const bluetooth = require('bleat').webbluetooth;
 
 // Settings
 let protocol = 'http';
@@ -32,7 +36,6 @@ app.set('brains', brains);
 app.set('private_brains', private_brains);
 app.set('interfaces', interfaces);
 // app.set('example', example);
-
 
 //CORS
 app.use(require("cors")()) // allow Cross-domain requests
@@ -104,6 +107,8 @@ app.use(function(err, req, res, next) {
 // Static Middleware
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'libraries','js')));
+app.use(express.static(path.join(__dirname, 'libraries','js','muse-js')));
+
 app.use(favicon(path.join(__dirname, 'public', 'favicons','favicon.ico')));
 
 // Setting the port
@@ -157,9 +162,9 @@ server.on('upgrade', function (request, socket, head) {
       app.get('games').set(game, {interfaces: new Map(), brains: new Map(), privateBrains: new Map()})
     }
 
-    if (app.get('games').get(game).interfaces.has(userId) == true && type == 'interfaces') {
-      command = 'interfaces'
-    } else if (type == 'brains' && ((access=="public" && app.get('games').get(game).brains.has(userId) == true) || (access=="private" && app.get('games').get(game).privateBrains.has(userId) == true))){
+    if (app.get('games').get(game).interfaces.has(userId) == true && ['interfaces','bidirectional'].includes(type)) {
+      command = type
+    } else if (['brains','bidirectional'].includes(type) && ((access=="public" && app.get('games').get(game).brains.has(userId) == true) || (access=="private" && app.get('games').get(game).privateBrains.has(userId) == true))){
       command = 'close' 
     } else {
       command = 'init'
@@ -177,6 +182,7 @@ wss.on('connection', function (ws, command, request) {
   let channelNames
   let access;
   let game;
+  let _type;
 
 
     if (getCookie(request, 'id') != undefined) {
@@ -190,6 +196,14 @@ wss.on('connection', function (ws, command, request) {
       userId =  protocols[0]
       type = protocols[1]
       game = protocols[2]
+      if (type==='bidirectional'){
+        access = protocols[3]
+        channelNames = []
+        for (let i = 4; i < protocols.length; i++){
+        channelNames.push(protocols[i])
+        }
+        channelNames = channelNames.join(',')
+      }
     } else {
       ws.send('No userID Cookie (Python) or Protocol (JavaScript) specified')
     }
@@ -199,14 +213,21 @@ wss.on('connection', function (ws, command, request) {
       ws.send(userId + ' is already has a brain on the network')
     return
   }
-  else if (command === 'interfaces'){
+  else if (['interfaces','bidirectional'].includes(command)){
     mirror_id = app.get('games').get(game).interfaces.get(userId).connections.length
     app.get('games').get(game).interfaces.get(userId).connections.push(ws);
   }
   else if (command === 'init'){ 
     mirror_id = 0;
-    if (access === 'public' || type === 'interfaces'){
-      app.get('games').get(game)[type].set(userId, {connections: [ws], channelNames: channelNames, access: access});
+    if (access === 'public' || ['interfaces','bidirectional'].includes(type)){
+      if (type == 'bidirectional'){
+        _type = ['interfaces','brains']
+      } else {
+        _type = [type];
+      }
+      _type.forEach((thisType) => {
+        app.get('games').get(game)[thisType].set(userId, {connections: [ws], channelNames: channelNames, access: access});
+      })
     } else {
       app.get('games').get(game).privateBrains.set(userId, {connections: [ws], channelNames: channelNames, access: access});
     }
@@ -236,7 +257,7 @@ wss.on('connection', function (ws, command, request) {
       clients.connections.forEach(function allClients(client){
         if (client.readyState === WebSocket.OPEN) {
         // Broadcast new number of brains to all interfaces except yourself
-        if (access === 'public' || (type == 'interfaces' && access === undefined)){
+        if (access === 'public' || (['interfaces','bidirectional'].includes(type) && access === undefined)){
           if (client.id != userId){
               client.send(str);
           }
@@ -310,12 +331,19 @@ wss.on('connection', function (ws, command, request) {
 
     ws.on('close', function () {
 
-      if (access === 'public' || type === 'interfaces'){
-        if (app.get('games').get(game)[type].get(userId).connections.length == 1){
-          app.get('games').get(game)[type].delete(userId);
+      if (access === 'public' || ['interfaces','bidirectional'].includes(type)){
+        if (type == 'bidirectional'){
+          _type = ['interfaces','brains']
         } else {
-          app.get('games').get(game)[type].get(userId).connections.splice(mirror_id,1)
+          _type = [type];
         }
+        _type.forEach((thisType) => {
+          if (app.get('games').get(game)[thisType].get(userId).connections.length == 1){
+            app.get('games').get(game)[thisType].delete(userId);
+          } else {
+            app.get('games').get(game)[thisType].get(userId).connections.splice(mirror_id,1)
+          }
+        })
       } else {
         app.get('games').get(game).privateBrains.delete(userId);
       }

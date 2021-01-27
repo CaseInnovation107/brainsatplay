@@ -12,10 +12,13 @@ const getSubmissionsController = require("../controllers/getSubmissions");
 const getExampleController = require("../controllers/getExample");
 const downloadAppController = require("../controllers/downloadApp");
 
-
+const path = require("path");
+const muse = require('muse-js');
 
 let routes = app => {
-  router.get("/", homeController.getHome);
+  router.get("/", 
+  homeController.getHome
+  );
 
   // User Management
   router.post("/login", attemptLoginController.attemptLogin);
