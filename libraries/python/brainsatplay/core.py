@@ -41,6 +41,8 @@ class Brain(object):
     async def stream(self, url, login_data, game, access):
 
         # Authenticate
+        if url[-1] is '/':
+            url = url[0:-1]
         res = self.session.post(url + '/login', login_data)
         res = json.loads(res.content)
 
