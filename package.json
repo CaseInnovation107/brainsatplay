@@ -11,7 +11,10 @@
     "connect-mongodb-session": "^2.4.1",
     "cookie-parser": "^1.4.5",
     "cors": "^2.8.5",
+    "cron": "^1.8.2",
+    "d3-fetch": "^2.0.0",
     "debug": "~2.2.0",
+    "discord.js": "^12.5.1",
     "dotenv": "^8.2.0",
     "ejs": "^3.1.5",
     "express": "^4.17.1",
@@ -25,6 +28,7 @@
     "multer": "^1.4.2",
     "multer-gridfs-storage": "^4.2.0",
     "muse-js": "^3.2.0",
+    "node-fetch-polyfill": "^2.0.6",
     "serve-favicon": "^2.5.0",
     "uuid": "^8.3.1",
     "ws": "^7.4.0"

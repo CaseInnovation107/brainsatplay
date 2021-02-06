@@ -10,6 +10,106 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const hbs = require('express-handlebars');
 
+// Discord Stuff
+const Discord = require('discord.js');
+const botFromFuture = new Discord.Client();
+botFromFuture.login('ODA3NjYyMTM4MzI3Njk1NDAx.YB7P-w.3SBEGDBdN-MaDHtdNP_gcdD_6Y4');
+var CronJob = require('cron').CronJob;
+if (typeof fetch !== 'function') {
+    global.fetch = require('node-fetch-polyfill');
+}
+const d3 = require('d3-fetch');
+var prompt = new Array(6)
+let promptData;
+let file = 'http://localhost/tgftfEnglish.csv'
+d3.csv(file).then(csv => promptData = csv);
+
+function generatePrompt(){
+  let all = Object.keys(promptData[0])
+  all.forEach((val,ind) => {
+        let flag = true;
+        let inner_flag;
+        let row;
+        let output;
+        let freq;
+        console.log(val)
+        if ([ '﻿Future', 'Time'].includes(val)) {
+                inner_flag = true;
+                while (inner_flag) {
+                    row = Math.floor(Math.random() * promptData.length);
+                    output = promptData[row][val];
+                    if (output != '' && output != undefined) {
+                        inner_flag = false;
+                        if (val == 'Time') {
+                            output += ' from now'
+                        }
+                        console.log(output)
+                        prompt[ind] = output;
+                    }
+                }
+        } else {
+            // Create bag of words (to account for frequency)
+            let bag = [];
+            let data_;
+            let word;
+            let components;
+            for (const r in promptData) {
+                data_ = promptData[r][val]
+                if (data_ != undefined && data_ != []) {
+                    if (data_.split(' (').length == 2) {
+                        components = data_.split(' (')
+                        word = components[0];
+                        freq = components[1].split(')')[0]
+                        for (let i = 0; i < freq; i++) {
+                            bag.push(word)
+                        }
+                    } else{
+                        bag.push(data_)
+                    }
+                }
+            }
+
+            while (flag) {
+                row = Math.floor(Math.random() * bag.length);
+                console.log(output)
+                output = bag[row]
+                if (output != '') {
+                    flag = false;
+                    prompt[ind] = output
+                }
+            }
+        }
+      })
+}
+
+
+botFromFuture.once('ready', () => {
+  generatePrompt()
+});
+
+botFromFuture.on('message', message => {
+  if (message.channel instanceof Discord.DMChannel){
+	if (message.content === 'get prompt') {
+    generatePrompt()
+		message.author.send(
+      `In a **${prompt[0]}** future **${prompt[1]}**, there is a **${prompt[2]}** BBI game for **${prompt[3]}** players which is played for **${prompt[4]} ${prompt[5]}**. What is it?`      )
+  }
+}
+});
+
+var job = new CronJob('0 8 * * *', function() {
+  botFromFuture.channels.fetch('802587106798993408')
+  .then(channel => {
+    channel.send(
+      `In a **${prompt[0]}** future **${prompt[1]}**, there is a **${prompt[2]}** BBI game for **${prompt[3]}** players which is played for **${prompt[4]} ${prompt[5]}**. What is it?`
+    )
+  }
+    );
+}, null, true, 'America/Los_Angeles');
+job.start();
+
+
+
 // BCI Stuff
 const WebSocket = require('ws');
 // Muse
