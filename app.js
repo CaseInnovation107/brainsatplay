@@ -11,6 +11,7 @@ const cookieParser = require('cookie-parser');
 const hbs = require('express-handlebars');
 require('dotenv').config();
 const discordBotKey = process.env.DISCORD_BOT_KEY
+console.log(discordBotKey)
 
 // Discord Stuff
 const Discord = require('discord.js');
@@ -23,7 +24,7 @@ if (typeof fetch !== 'function') {
 const d3 = require('d3-fetch');
 var prompt = new Array(6)
 let promptData;
-let file = 'http://localhost/tgftfEnglish.csv'
+let file = 'https://brainsatplay.com/the-game-from-the-future/sheets/tgftfEnglish.csv'
 d3.csv(file).then(csv => promptData = csv);
 
 function generatePrompt(){
