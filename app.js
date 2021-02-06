@@ -9,11 +9,13 @@ const logger = require('morgan');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const hbs = require('express-handlebars');
+require('dotenv').config();
+const discordBotKey = process.env.DISCORD_BOT_KEY
 
 // Discord Stuff
 const Discord = require('discord.js');
 const botFromFuture = new Discord.Client();
-botFromFuture.login('ODA3NjYyMTM4MzI3Njk1NDAx.YB7P-w.3SBEGDBdN-MaDHtdNP_gcdD_6Y4');
+botFromFuture.login(discordBotKey);
 var CronJob = require('cron').CronJob;
 if (typeof fetch !== 'function') {
     global.fetch = require('node-fetch-polyfill');
