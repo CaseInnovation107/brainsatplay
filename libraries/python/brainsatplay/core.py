@@ -31,6 +31,7 @@ class Brain(object):
         self.session = s
         self.reader = []
         self.data = []
+        self.data_to_pass = {}
 
     def __repr__(self):
         return "Brain('{},'{}',{})".format(self.id, self.date)
@@ -38,10 +39,33 @@ class Brain(object):
     def __str__(self):
         return '{} _ {}'.format(self.id, self.date)
 
-    async def stream(self, url, login_data, game, access):
+
+    def passData(self,name,val):
+        self.data_to_pass[name] = val
+
+    async def stream(self, url, login_data, game, access, data_stream, arbitraryEventFunction=None, board=None, port=None):
+
+        # Set default BCI message
+        message = {
+                    'destination': 'bci', 
+                    'id': self.id,
+                    'data': {}
+            }
+
+        # Initialize stream based on data formats
+        for item in data_stream:
+            if item == 'brainflow':
+                self.connect(board=board,port=port)
+                self.board.start_stream(num_samples=450000)
+                self.start_time = time.time()
+                message['data']['signal'] = None
+                message['data']['time'] = None
+            else:
+                self.data_to_pass[item] = None
+                message['data'][item] = None
 
         # Authenticate
-        if url[-1] is '/':
+        if url[-1] == '/':
             url = url[0:-1]
         res = self.session.post(url + '/login', login_data)
         res = json.loads(res.content)
@@ -91,33 +115,43 @@ class Brain(object):
                     print('\n\nError: ' + msg + '\n\n')
                     return
 
-                self.board.start_stream(num_samples=450000)
-                self.start_time = time.time()
+                # Specify stop command
                 signal.signal(signal.SIGINT, self.stop)
 
                 while True:
 
-                    # Get Data
-                    pass_data = []
-                    rate = DataFilter.get_nearest_power_of_two(self.board.rate)
-                    data = self.board.get_board_data()
-                    t = data[self.board.time_channel]
-
-                    if self.all_channels:
-                        data = data[self.board.eeg_channels] 
-                    else:
-                        data = data[self.board.eeg_channels][self.channels]
-
-                    for entry in data:
-                        pass_data.append((entry).tolist())
-                        
                     message = {
-                        'destination': 'bci', 
-                        'id': self.id,
-                    'data': {'signal':pass_data,'time':t.tolist()}
+                            'destination': 'bci', 
+                            'id': self.id,
+                            'data': {}
                     }
-                    message = json.dumps(message, separators=(',', ':'))
+
+                    for item in data_stream:
+                        if item == 'brainflow':
+                            # Get Data
+                            pass_data = []
+                            rate = DataFilter.get_nearest_power_of_two(self.board.rate)
+                            data = self.board.get_board_data()
+                            t = data[self.board.time_channel]
+
+                            if self.all_channels:
+                                data = data[self.board.eeg_channels] 
+                            else:
+                                data = data[self.board.eeg_channels][self.channels]
+
+                            for entry in data:
+                                pass_data.append((entry).tolist())
+                                
+                            message['data']['signal'] = pass_data
+                            message['data']['time'] = t.tolist()
+
+                        else:
+                            arbitraryEventFunction(self)
+                            if (self.data_to_pass[item] != None):
+                                message['data'][item] = self.data_to_pass[item]
+                                self.data_to_pass[item] = None
                     
+                    message = json.dumps(message, separators=(',', ':'))
                     
                     # (Re)Open Websocket Connection
                     if not websocket.open:

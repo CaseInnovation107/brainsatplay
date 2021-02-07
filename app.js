@@ -12,9 +12,6 @@ const hbs = require('express-handlebars');
 
 // BCI Stuff
 const WebSocket = require('ws');
-// Muse
-// const noble = require('noble');
-// const bluetooth = require('bleat').webbluetooth;
 
 // Settings
 let protocol = 'http';
