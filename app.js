@@ -358,7 +358,7 @@ wss.on('connection', function (ws, command, request) {
       };
 
       // Update server-side data after every message
-      app.get('games').get(game).game.update();
+      // app.get('games').get(game).game.update();
     });
 
     ws.on('close', function () {
