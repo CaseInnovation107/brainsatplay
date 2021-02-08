@@ -1,3 +1,6 @@
+let synchrony = 0;
+
+
 function setup() {
 
   // P5 Setup
@@ -14,6 +17,8 @@ function setup() {
   // Brains@Play Setup
   game = new Game('template')
   game.simulate(2);
+
+  // ensure that there is always a value available between server calls
   game.subscribe('synchrony',true);
   
   connectToggle.mousePressed(() => {
@@ -35,6 +40,11 @@ function draw() {
 
   // Update Voltage Buffers and Derived Variables
   game.update();
+
+  // Update Synchrony 
+  game.getMetric('synchrony').then((val) => {
+    synchrony = val;
+  })
 
   // Draw Raw Voltage 
   let c;
@@ -62,16 +72,15 @@ function draw() {
     }
   }
   
-  // Draw Synchrony 
   noFill()
-  if (game.getMetric('synchrony') < 0) {
+  if (synchrony < 0) {
     stroke('blue')
   } else {
     stroke('red')
   }
   strokeWeight(2)
-  ellipse((windowWidth / 2), windowHeight/2, 10 * game.getMetric('synchrony') * Math.min(windowHeight / 2, windowWidth / 2));
-
+  ellipse((windowWidth / 2), windowHeight/2, 10 * synchrony * Math.min(windowHeight / 2, windowWidth / 2));
+  
   noStroke()
   // Include Text for Raw Synchrony Value
   fill('white')
@@ -85,17 +94,20 @@ function draw() {
     text('Live Data Stream', windowWidth / 2, windowHeight-80)
   } else {
     text('Synthetic Data Stream', windowWidth / 2, windowHeight-80)
-  }
-  
+  } 
+
   textStyle(NORMAL)
   if (game.info.brains == 0) {
     text('No brains on the network...', windowWidth / 2, windowHeight/2)
   } else if (game.info.brains < 2) {
     text('One brain on the network...', windowWidth / 2, windowHeight/2)
-  } else {
-    text(game.getMetric('synchrony').toFixed(4), windowWidth / 2, windowHeight/2)
+  }else {
+    if (synchrony != undefined){
+      text(synchrony.toFixed(4), windowWidth / 2, windowHeight/2)
+    } else {
+      text(synchrony, windowWidth / 2, windowHeight/2)
+    }
   }
-
 }
 
 function windowResized() {

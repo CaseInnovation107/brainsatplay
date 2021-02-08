@@ -10,6 +10,8 @@ const attemptSignupController = require("../controllers/attemptSignup");
 const getFileController = require("../controllers/getFile");
 const getSubmissionsController = require("../controllers/getSubmissions");
 const getExampleController = require("../controllers/getExample");
+const getSynchronyController = require("../controllers/getSynchrony");
+
 const downloadAppController = require("../controllers/downloadApp");
 
 const path = require("path");
@@ -28,6 +30,8 @@ let routes = app => {
   // Platform Commands
   router.get('/getexample', getExampleController.getExample);
   router.get('/downloadapp', downloadAppController.downloadApp)
+  router.post('/synchrony', getSynchronyController.getSynchrony);
+
 
   // Competition Management
   router.post("/submit", submitController.submitGame);

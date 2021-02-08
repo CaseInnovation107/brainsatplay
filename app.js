@@ -108,6 +108,8 @@ app.use(express.static(path.join(__dirname, 'libraries','js','muse-js')));
 
 app.use(favicon(path.join(__dirname, 'public', 'favicons','favicon.ico')));
 
+let Game = require(path.join(__dirname, 'libraries','js','Game.js'))
+
 // Setting the port
 app.set('port', port);
 
@@ -156,7 +158,14 @@ server.on('upgrade', function (request, socket, head) {
     let command;
 
     if (!app.get('games').has(game)){
-      app.get('games').set(game, {interfaces: new Map(), brains: new Map(), privateBrains: new Map()})
+      app.get('games').set(game, {interfaces: new Map(), brains: new Map(), privateBrains: new Map(), game:new Game(game)});
+      
+      // // Initialize Server-Side Game Object to Receive Live Data
+      // let serverSideGame = app.get('games').get(game).game
+      // serverSideGame.initialize()
+      // serverSideGame.initializeLockedBuffers()
+      // serverSideGame.info.brains = undefined
+      // serverSideGame.info.interfaces = undefined
     }
 
     if (app.get('games').get(game).interfaces.has(userId) == true && ['interfaces','bidirectional'].includes(type)) {
@@ -181,7 +190,7 @@ wss.on('connection', function (ws, command, request) {
   let game;
   let _type;
 
-
+    // Track Connections on the Server
     if (getCookie(request, 'id') != undefined) {
       userId =  getCookie(request, 'id')
       type = getCookie(request, 'connectionType')
@@ -204,6 +213,9 @@ wss.on('connection', function (ws, command, request) {
     } else {
       ws.send('No userID Cookie (Python) or Protocol (JavaScript) specified')
     }
+
+  // Get the Appropriate Server-Side Game
+  // let serverSideGame = app.get('games').get(game).game
 
   let mirror_id;
   if (command === 'close'){
@@ -241,14 +253,14 @@ wss.on('connection', function (ws, command, request) {
       destination: 'init'
     }))
   }
-  
-    let str = JSON.stringify({
-      n: +1,
-      id: userId,
-      access: access,
-      channelNames: channelNames,
-      destination: type
-    });
+
+  let str = JSON.stringify({
+    n: +1,
+    id: userId,
+    access: access,
+    channelNames: channelNames,
+    destination: type
+  });
 
     app.get('games').get(game).interfaces.forEach(function each(clients, id) {
       clients.connections.forEach(function allClients(client){
@@ -268,8 +280,23 @@ wss.on('connection', function (ws, command, request) {
       })
     });
 
+    // Log new brains on the server-side Game object(if public)
+
+    // if (access === 'public' && _type.includes('brains')){
+    //   serverSideGame.add(userId, channelNames, 'public')
+    //   serverSideGame.updateUsedChannels()
+    //   serverSideGame.getMyIndex()
+    //   serverSideGame.initializeLockedBuffers()
+    // } 
+
+    // if (access === 'public' && _type.includes('interfaces')){
+    //   serverSideGame.info.interfaces += 1;
+    // }
+
+    // Manage specific messages from clients
     ws.on('message', function (str) {
       let obj = JSON.parse(str);
+      
 
       if (obj.destination == 'initializeBrains'){
         
@@ -323,7 +350,15 @@ wss.on('connection', function (ws, command, request) {
             }
           })
         });
+
+        // Broadcast brain signals to the server-side Game object (if public)
+        // if (access === 'public'){
+        //   serverSideGame.brains[serverSideGame.info.access].get(obj.id).streamIntoBuffer(obj.data)
+        // }
       };
+
+      // Update server-side data after every message
+      app.get('games').get(game).game.update();
     });
 
     ws.on('close', function () {
@@ -345,7 +380,7 @@ wss.on('connection', function (ws, command, request) {
         app.get('games').get(game).privateBrains.delete(userId);
       }
     
-      // Broadcast brains update to all interfacea
+      // Broadcast brains update to all interfaces
 
         let str = JSON.stringify({
           n: -1,
@@ -367,6 +402,17 @@ wss.on('connection', function (ws, command, request) {
             }
           })
         });
+
+        // if (access === 'public' && _type.includes('brains')){
+        //   serverSideGame.remove(userId, 'public')
+        //   serverSideGame.updateUsedChannels()
+        //   serverSideGame.getMyIndex()
+        //   serverSideGame.initializeLockedBuffers()
+        // } 
+
+        // if (access === 'public' && _type.includes('interfaces')){
+        //   serverSideGame.info.interfaces += -1;
+        // }
 
         // Remove game from server if empty
         if (app.get('games').get(game).interfaces.size == 0 && app.get('games').get(game).brains.size == 0 && app.get('games').get(game).privateBrains.size == 0){
