@@ -22,7 +22,7 @@ function setup() {
   game.subscribe('synchrony',true);
   
   connectToggle.mousePressed(() => {
-      game.connect(dict = {'guestaccess': true}, url = 'http://localhost'),//url = 'https://brainsatplay.azurewebsites.net/'),
+      game.connect(dict = {'guestaccess': true}, url = 'https://brainsatplay.azurewebsites.net/'),
       disconnectToggle.show(),
       connectToggle.hide()
   });
