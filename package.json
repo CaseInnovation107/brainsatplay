@@ -6,6 +6,7 @@
     "start": "node app.js"
   },
   "dependencies": {
+    "bcijs": "^1.8.0",
     "bleat": "^0.1.9",
     "body-parser": "^1.19.0",
     "connect-mongodb-session": "^2.4.1",

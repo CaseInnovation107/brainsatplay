@@ -61,22 +61,26 @@ function draw() {
 
     let brainData = game.getBuffer('voltage')[ind]
     // Grab only the first channel of data
-    let data = brainData[0]
+if (brainData.length != 0){ 
+let data = brainData[0]
     let dx = windowWidth / data.length;
     for (var point = 0; point < data.length - 1; point++) {
       line(point * dx,
-        ((data[point] * windowHeight / 16) + windowHeight / 2),
+        ((data[point] * windowHeight / 1000) + windowHeight / 2),
         (point + 1) * dx,
-        ((data[point + 1] * windowHeight / 16) + windowHeight / 2)
+        ((data[point + 1] * windowHeight / 1000) + windowHeight / 2)
       )
     }
   }
+}
   
   noFill()
   if (synchrony < 0) {
     stroke('blue')
-  } else {
+  } else if (synchrony > 0){
     stroke('red')
+  } else {
+    noStroke()
   }
   strokeWeight(2)
   ellipse((windowWidth / 2), windowHeight/2, 10 * synchrony * Math.min(windowHeight / 2, windowWidth / 2));
