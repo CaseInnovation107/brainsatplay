@@ -558,7 +558,7 @@ class Game {
                     channelData = source[channel]
                     if (userInd === 0) {
                         if (this.me.index !== undefined) {
-                            if (this.metrics[metricName].buffer.length !== 0 && this.metrics[metricName].buffer[this.me.index].length === brain.channelNames.length) {
+                            if (this.metrics[metricName].buffer.length !== 0 && this.metrics[metricName].buffer[this.me.index].length === this.usedChannelNames.length) {
                                 this.metrics[metricName].buffer[this.me.index][channelInd].splice(0, 1)
                                 this.metrics[metricName].buffer[this.me.index][channelInd].push(channelData)
                             }
