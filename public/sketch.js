@@ -1,6 +1,9 @@
 let length = 5;
 let numItems = Math.pow(length, 2);
 let objects = [];
+for (let i=0;i < numItems; i++){
+  objects.push(i.toString())
+}
 let framesOnScreen = 25;
 let framesOffScreen = framesOnScreen/5;
 let on = false;
@@ -8,39 +11,40 @@ let margin = 100;
 let rightSidebar = 300;
 let chooseEllipses = [];
 let t = 0;
+let scaleEEG = 25;
+
+let erp_settings = {
+  name: 'p300',
+  subset: 0.2,
+  trials: 10,
+  iti: 1000, // milliseconds
+  num_samples: 500, //500,
+  duration: 250, // milliseconds
+  objects: objects
+}
 
 function setup() {
 
   // P5 Setup
   createCanvas(windowWidth, windowHeight);
 
-  for (let i=0;i < numItems; i++){
-    objects.push(i.toString())
-  }
-
   // Brains@Play Setup
   game = new Game('template')
   game.simulate(2);
-  game.setERP(objects)
+  game.setERP(erp_settings)
 }
 
 function draw() {
   background(0);
+  noStroke()
 
   // Update Voltage Buffers and Derived Variables
   game.update();
 
-  background(0);
-
-  if (t >= framesOnScreen && on == false) {
-    chooseEllipses = getUniqueRandomSubset(numItems, numItems/5)
-    on = !on;
-    t = 0;
-  } else if (t >= framesOffScreen && on == true) {
-    chooseEllipses = new Array(length / 5).fill((Math.pow(length, 2)) + 1)
-    on = !on;
-    t = 0;
-  }
+  chooseEllipses = game.erp.currentEventState.chosen
+  chooseEllipses = chooseEllipses.map((key) => {
+    return objects.indexOf(key)
+  })
 
   let num = 0;
   for (let i = 0; i < length; i++) {
@@ -60,17 +64,34 @@ function draw() {
   }
 
   t++;
-  fill(54, 235, 255)
-  rect(0,window.height-15, (game.erp.count/game.erp.signal[game.erp.trial][0].length)*(windowWidth-rightSidebar),window.height)
-  
-  stroke('white')
-  line((windowWidth - rightSidebar),0,(windowWidth - rightSidebar),windowHeight)
 
-  noStroke()
   fill('white')
   textStyle(BOLD)
   textSize(15)
-  text('Trial: ' + game.erp.trial, (windowWidth - rightSidebar) + 50, margin)
+  text('Trial: ' + game.erp.trial, (windowWidth - rightSidebar) + margin, margin)
+
+  text('State: ' + game.erp.state, (windowWidth - rightSidebar) + margin, margin+25)
+
+  for (let trial = 0; trial < game.erp.events.length; trial++){
+    noStroke()
+    text('Trial ' + trial + ': ' + game.erp.events[trial].chosen, 
+    (windowWidth - rightSidebar) + margin, 
+    margin + 75 + 50*(trial+1))
+
+    stroke(54, 235, 255)
+    let trialData = game.erp.signal[trial][0]
+    trialData.forEach((point ,ind) => {
+      line((((windowWidth-rightSidebar)) + ((rightSidebar-margin)*ind/trialData.length)),
+        margin + 90 + 50*(trial+1) - (trialData[ind]/scaleEEG),
+        (((windowWidth-rightSidebar)) + ((rightSidebar-margin)*(ind+1)/trialData.length)),
+        margin + 90 + 50*(trial+1) - (trialData[ind+1]/scaleEEG),
+      )
+    })
+  }
+
+  stroke('white')
+  line((windowWidth - rightSidebar),0,(windowWidth - rightSidebar),windowHeight)
+
 }
 
 function windowResized() {

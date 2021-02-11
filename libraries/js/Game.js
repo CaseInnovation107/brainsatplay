@@ -543,23 +543,20 @@ class Game {
         let userInd = 0;
 
         this.brains[this.info.access].forEach((brain) => {
+            let shiftedValues = []
             brain.buffer.forEach((channelData, channel) => {
             channelInd = this.usedChannelNames.indexOf(brain.channelNames[channel])
 
             if (channelInd !== -1){
                 if (source === 'brains') {
                     if (channelData.length !== 0) {
-                        channelData = brain.buffer[channel].shift()
+                        shiftedValues.push(brain.buffer[channel].shift())
+                        channelData = shiftedValues[-1]
                     } else {
                         channelData = 0
                     }
                     this.metrics[metricName].buffer[userInd][channelInd].splice(0, 1)
                     this.metrics[metricName].buffer[userInd][channelInd].push(channelData)
-
-                    // Stream into ERP
-                    if (this.erp){
-                        this.streamERP(userInd,channel,channelData)
-                    }
 
                 } else {
                     channelData = source[channel]
@@ -579,6 +576,14 @@ class Game {
                 }
                 }
             })
+
+            // Stream into ERP
+            if (source === 'brains') {
+                if (this.erp){
+                    this.streamERP(userInd,shiftedValues)
+                }
+            }
+
             userInd++
         })
     }
@@ -948,55 +953,114 @@ class Game {
     }
 
     // BCI Methods
-    setERP(objects=[],trials=10, types=['p300'],num_samples=500) {
+    setERP(erp_settings) {
         this.erp = {};
-        console.log(this.brains[this.info.access].get(this.me.username).numChannels)
-        this.erp.signal = Array.from({length: trials}, e => Array.from({length: this.brains[this.info.access].get(this.me.username).numChannels}, e => new Array(num_samples).fill()))
+        this.erp.signal = Array.from({length: erp_settings.trials}, e => Array.from({length: this.brains[this.info.access].get(this.me.username).numChannels}, e => new Array(erp_settings.num_samples).fill()))
         this.erp.count = 0
         this.erp.trial = 0;
-        this.erp.session = 'in progress';
-        this.erp.types = types
+        this.erp.iti = erp_settings.iti;
+        this.erp.t = Date.now();
+        this.erp.state = 'pre-session';
+        this.erp.type = erp_settings.name;
+        this.erp.subset = erp_settings.subset;
+        this.erp.duration = erp_settings.duration;
+        this.erp.currentEventState = {state: {}, chosen: []};
 
-        let objectDict = {};
-        let typeDict = {};
-        types.forEach((type) => {
-            objects.forEach((name) => {
-                if (type === 'p300'){
-                    objectDict[name] = 0;
-                } else {
-                    objectDict[name] = undefined;
-                }
-            })
-        typeDict[type] = objectDict
+        let stateDict = {};
+
+        erp_settings.objects.forEach((name) => {
+        if (erp_settings.name === 'p300'){
+            stateDict[name] = false;
+        } else {
+            stateDict[name] = undefined;
         }
-        )
-
-        types.forEach((type) => {
-            this.erp[type] = {};
-            this.erp[type].objects = Array.from({length: trials}, e => typeDict[type])
-            this.erp[type].results = Array.from({length: trials}, e => Array(this.brains[this.info.access].size))
         })
+        let objectDict = {state: stateDict, chosen: []}
+        this.erp.events = Array.from({length: erp_settings.trials}, e => objectDict)
+        this.erp.results = Array.from({length: erp_settings.trials}, e => Array(this.brains[this.info.access].size))
     }
 
-    streamERP(user,channel,data){
-        if (this.erp && this.erp.session !== 'done'){
-            if (user === this.me.index){
-                this.erp.signal[this.erp.trial][channel].splice(0, 1);
-                this.erp.signal[this.erp.trial][channel].push(data)
-            }
-    }
+    streamERP(user,brainData){
+        if (this.erp && this.erp.state.includes('trial')){
+            brainData.forEach((channelData, channel) => {
+                    if (user === this.me.index){
+                        this.erp.signal[this.erp.trial][channel].splice(0, 1);
+                        this.erp.signal[this.erp.trial][channel].push(channelData)
+                    } 
+            })
+            this.erp.count++;
+        }
     }
 
     updateERP(){
-        this.erp.count++;
-
-        if (this.erp.count >= this.erp.signal[this.erp.trial][0].length){
-            this.erp.trial++;
-            this.erp.count = 0;
-            if (this.erp.trial === this.erp.signal.length){
-                this.erp.session = 'done';
+        if (this.erp.state != 'done'){
+        if (['pre-session','iti'].includes(this.erp.state)){
+            if (this.erp.t+(this.erp.iti) <= Date.now()){
+                this.erp.state = 'trial-on';
+                this.erp.currentEventState = this.objectSelection()
+                this.erp.t = Date.now();
+            }
+        } if (['trial-on','trial-off'].includes(this.erp.state)){
+            if (this.erp.count >= this.erp.signal[this.erp.trial][0].length){
+                this.erp.count = 0;
+                this.erp.trial++;
+                if ((this.erp.trial) === this.erp.signal.length){
+                    this.erp.state = 'done';
+                    this.erp.trial = NaN;
+                    this.erp.currentEventState = this.objectSelection(false)
+                } else {
+                    this.erp.state = 'iti';
+                    this.erp.currentEventState = this.objectSelection(false)
+                    this.erp.t = Date.now();
+                }
+            } else if (this.erp.t+(this.erp.duration) <= Date.now() && this.erp.state == 'trial-on'){
+                this.erp.state = 'trial-off';
+                this.erp.currentEventState = this.objectSelection(false)
             }
         }
+    }
+    }
+    
+
+    objectSelection(choose=true){
+        let eventState;
+
+        if (this.erp.state != 'done'){
+            eventState = this.erp.events[this.erp.trial].state
+        } else {
+            eventState = this.erp.currentEventState.state
+        }
+
+        let objKeys;
+        let chosen = [];
+
+        if (choose){
+            if (this.erp.trial === 0){
+                objKeys = Object.keys(eventState)
+            } else {
+                let prevSubset = this.erp.events[this.erp.trial-1].chosen
+                objKeys = Object.keys(eventState).filter((key) => !prevSubset.includes(key))
+            }
+            
+            for (let i = 0; i < this.erp.subset*objKeys.length ; i++){
+                chosen.push(objKeys.splice(Math.floor(Math.random()*objKeys.length),1)[0])
+            }
+        }
+
+        
+        Object.keys(eventState).forEach((object) => {
+            if (chosen.includes(object)){
+                eventState[object] = true;
+            } else {
+                eventState[object] = false;
+            }
+        })
+
+        if (choose){
+            this.erp.events[this.erp.trial] = {state: eventState, chosen: chosen};
+        } 
+
+        return {state: eventState, chosen: chosen}
     }
 
 
