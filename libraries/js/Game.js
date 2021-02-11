@@ -498,6 +498,7 @@ class Game {
         }
         this.setUpdateMessage()
         this.updateSubscriptions()
+        this.updateERP()
     }
 
     async updateSubscriptions() {
@@ -554,6 +555,12 @@ class Game {
                     }
                     this.metrics[metricName].buffer[userInd][channelInd].splice(0, 1)
                     this.metrics[metricName].buffer[userInd][channelInd].push(channelData)
+
+                    // Stream into ERP
+                    if (this.erp){
+                        this.streamERP(userInd,channel,channelData)
+                    }
+
                 } else {
                     channelData = source[channel]
                     if (userInd === 0) {
@@ -938,6 +945,58 @@ class Game {
             });
 
         return resDict
+    }
+
+    // BCI Methods
+    setERP(objects=[],trials=10, types=['p300'],num_samples=500) {
+        this.erp = {};
+        console.log(this.brains[this.info.access].get(this.me.username).numChannels)
+        this.erp.signal = Array.from({length: trials}, e => Array.from({length: this.brains[this.info.access].get(this.me.username).numChannels}, e => new Array(num_samples).fill()))
+        this.erp.count = 0
+        this.erp.trial = 0;
+        this.erp.session = 'in progress';
+        this.erp.types = types
+
+        let objectDict = {};
+        let typeDict = {};
+        types.forEach((type) => {
+            objects.forEach((name) => {
+                if (type === 'p300'){
+                    objectDict[name] = 0;
+                } else {
+                    objectDict[name] = undefined;
+                }
+            })
+        typeDict[type] = objectDict
+        }
+        )
+
+        types.forEach((type) => {
+            this.erp[type] = {};
+            this.erp[type].objects = Array.from({length: trials}, e => typeDict[type])
+            this.erp[type].results = Array.from({length: trials}, e => Array(this.brains[this.info.access].size))
+        })
+    }
+
+    streamERP(user,channel,data){
+        if (this.erp && this.erp.session !== 'done'){
+            if (user === this.me.index){
+                this.erp.signal[this.erp.trial][channel].splice(0, 1);
+                this.erp.signal[this.erp.trial][channel].push(data)
+            }
+    }
+    }
+
+    updateERP(){
+        this.erp.count++;
+
+        if (this.erp.count >= this.erp.signal[this.erp.trial][0].length){
+            this.erp.trial++;
+            this.erp.count = 0;
+            if (this.erp.trial === this.erp.signal.length){
+                this.erp.session = 'done';
+            }
+        }
     }
 
 

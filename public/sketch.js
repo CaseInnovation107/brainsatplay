@@ -1,38 +1,27 @@
-let synchrony = 0;
-
+let length = 5;
+let numItems = Math.pow(length, 2);
+let objects = [];
+let framesOnScreen = 25;
+let framesOffScreen = framesOnScreen/5;
+let on = false;
+let margin = 100;
+let rightSidebar = 300;
+let chooseEllipses = [];
+let t = 0;
 
 function setup() {
 
   // P5 Setup
-  createCanvas(400, 400);
-  textAlign(CENTER, CENTER);
-  resizeCanvas(windowWidth, windowHeight);
-  connectToggle = createButton('Connect to Server');
-  disconnectToggle = createButton('Disconnect');
-  connectToggle.position(25, document.getElementById('info-card').clientHeight);
-  disconnectToggle.position(25, document.getElementById('info-card').clientHeight);
-  disconnectToggle.hide()
+  createCanvas(windowWidth, windowHeight);
 
+  for (let i=0;i < numItems; i++){
+    objects.push(i.toString())
+  }
 
   // Brains@Play Setup
   game = new Game('template')
   game.simulate(2);
-
-  // ensure that there is always a value available between server calls
-  game.subscribe('synchrony',true);
-  
-  connectToggle.mousePressed(() => {
-      game.connect(dict = {'guestaccess': true}, url = 'https://brainsatplay.azurewebsites.net/'),
-      disconnectToggle.show(),
-      connectToggle.hide()
-  });
-
-  disconnectToggle.mousePressed(() => {
-      game.disconnect(),
-      disconnectToggle.hide(),
-      connectToggle.show()
-  });
-
+  game.setERP(objects)
 }
 
 function draw() {
@@ -41,81 +30,59 @@ function draw() {
   // Update Voltage Buffers and Derived Variables
   game.update();
 
-  // Update Synchrony 
-  game.getMetric('synchrony').then((val) => {
-    synchrony = val;
-  })
+  background(0);
 
-  // Draw Raw Voltage 
-  let c;
+  if (t >= framesOnScreen && on == false) {
+    chooseEllipses = getUniqueRandomSubset(numItems, numItems/5)
+    on = !on;
+    t = 0;
+  } else if (t >= framesOffScreen && on == true) {
+    chooseEllipses = new Array(length / 5).fill((Math.pow(length, 2)) + 1)
+    on = !on;
+    t = 0;
+  }
 
-  for (let ind = 0; ind < game.info.brains; ind++) {
-    if (ind == 1) {
-       c = color('#1cc5cd')
-    } else {
-       c = color('gray')
-    }
-    c.setAlpha(100)
-    strokeWeight(1)
-    stroke(c)
+  let num = 0;
+  for (let i = 0; i < length; i++) {
+    for (let j = 0; j < length; j++) {
+      if (chooseEllipses.includes(num)) {
+        fill(0)
+      } else {
+        fill(255)
+      }
 
-    let brainData = game.getBuffer('voltage')[ind]
-    // Grab only the first channel of data
-if (brainData.length != 0){ 
-let data = brainData[0]
-    let dx = windowWidth / data.length;
-    for (var point = 0; point < data.length - 1; point++) {
-      line(point * dx,
-        ((data[point] * windowHeight / 1000) + windowHeight / 2),
-        (point + 1) * dx,
-        ((data[point + 1] * windowHeight / 1000) + windowHeight / 2)
-      )
+      ellipse(margin + (i * ((windowWidth - 2 * margin - rightSidebar) / (length - 1))), // x
+        margin + (j * ((windowHeight - 2 * margin) / (length - 1))), // y
+        Math.min(windowWidth, windowHeight) * (1 / (3 * length))) // size
+      
+      num++
     }
   }
-}
+
+  t++;
+  fill(54, 235, 255)
+  rect(0,window.height-15, (game.erp.count/game.erp.signal[game.erp.trial][0].length)*(windowWidth-rightSidebar),window.height)
   
-  noFill()
-  if (synchrony < 0) {
-    stroke('blue')
-  } else if (synchrony > 0){
-    stroke('red')
-  } else {
-    noStroke()
-  }
-  strokeWeight(2)
-  ellipse((windowWidth / 2), windowHeight/2, 10 * synchrony * Math.min(windowHeight / 2, windowWidth / 2));
-  
+  stroke('white')
+  line((windowWidth - rightSidebar),0,(windowWidth - rightSidebar),windowHeight)
+
   noStroke()
-  // Include Text for Raw Synchrony Value
   fill('white')
   textStyle(BOLD)
   textSize(15)
-  text('Synchrony', windowWidth / 2, windowHeight-100)
-  textStyle(ITALIC)
-  textSize(10)
-
-  if (!game.info.simulated) {
-    text('Live Data Stream', windowWidth / 2, windowHeight-80)
-  } else {
-    text('Synthetic Data Stream', windowWidth / 2, windowHeight-80)
-  } 
-
-  textStyle(NORMAL)
-  if (game.info.brains == 0) {
-    text('No brains on the network...', windowWidth / 2, windowHeight/2)
-  } else if (game.info.brains < 2) {
-    text('One brain on the network...', windowWidth / 2, windowHeight/2)
-  }else {
-    if (synchrony != undefined){
-      text(synchrony.toFixed(4), windowWidth / 2, windowHeight/2)
-    } else {
-      text(synchrony, windowWidth / 2, windowHeight/2)
-    }
-  }
+  text('Trial: ' + game.erp.trial, (windowWidth - rightSidebar) + 50, margin)
 }
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-  connectToggle.position(25, document.getElementById('info-card').clientHeight);
-  disconnectToggle.position(25, document.getElementById('info-card').clientHeight);
+}
+
+
+function getUniqueRandomSubset(numItems,subset) {
+  var arr = [];
+  while (arr.length < subset) {
+    var r = Math.floor(Math.random()*numItems);
+    if (arr.indexOf(r) === -1) arr.push(r);
+  }
+  return arr
 }
