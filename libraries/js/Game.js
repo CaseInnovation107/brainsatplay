@@ -551,7 +551,7 @@ class Game {
                 if (source === 'brains') {
                     if (channelData.length !== 0) {
                         shiftedValues.push(brain.buffer[channel].shift())
-                        channelData = shiftedValues[-1]
+                        channelData = shiftedValues[shiftedValues.length - 1]
                     } else {
                         channelData = 0
                     }
@@ -993,8 +993,8 @@ class Game {
     }
 
     updateERP(){
-        if (this.erp.state != 'done'){
-        if (['pre-session','iti'].includes(this.erp.state)){
+        if (this.erp && this.erp.state != 'done'){
+            if (['pre-session','iti'].includes(this.erp.state)){
             if (this.erp.t+(this.erp.iti) <= Date.now()){
                 this.erp.state = 'trial-on';
                 this.erp.currentEventState = this.objectSelection()
