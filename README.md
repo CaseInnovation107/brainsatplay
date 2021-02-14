@@ -80,14 +80,10 @@ If you are having issues, please email Garrett Flynn at gflynn@usc.edu
 **brainsatplay** was supported by [OpenBCI](https://openbci.com/) and [USC Visions and Voices](https://visionsandvoices.usc.edu/) for the production of [Livewire: A Stimulating Night of Neurotechnology](https://visionsandvoices.usc.edu/eventdetails/?event_id=33741435186601&s_type=&s_genre=) 
 
 ### External Libraries Used
-#### JavaScript (Front-End)
-- [bci.js](https://bci.js.org/)
-- gl-matrix
-- fontawesome
-
 #### JavaScript (Back-End)
 - [NPM](https://www.npmjs.com/) and [Node](https://nodejs.org/en/).
 - [Express](https://expressjs.com/)
+- [bci.js](https://bci.js.org/)
 - [MongoDB](https://www.mongodb.com/)
 - [ws](https://www.npmjs.com/package/ws)
 
