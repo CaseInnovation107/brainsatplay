@@ -1,44 +1,27 @@
 const express = require("express");
 const router = express.Router();
-const homeController = require("../controllers/home");
-const uploadController = require("../controllers/upload");
-const submitController = require("../controllers/submit");
-const attemptLoginController = require("../controllers/attemptLogin");
-const attemptLogoutController = require("../controllers/attemptLogout");
-const attemptSignupController = require("../controllers/attemptSignup");
-
-const getFileController = require("../controllers/getFile");
-const getSubmissionsController = require("../controllers/getSubmissions");
-const getExampleController = require("../controllers/getExample");
-const getSynchronyController = require("../controllers/getSynchrony");
-
-const downloadAppController = require("../controllers/downloadApp");
-
 const path = require("path");
-const muse = require('muse-js');
+const fs = require('fs');
+
+let appsDir = {}
+fs.readdir(path.join('public','examples'), (err, files) => {
+  files.forEach(file => {
+    let dir = path.join('public', 'examples',file)
+    let info = fs.readFileSync(path.join('public', 'examples',file,'info.json'));
+    appsDir[file] = JSON.parse(info)
+    appsDir[file].path = dir
+    });
+  });
 
 let routes = app => {
-  router.get("/", 
-  homeController.getHome
-  );
 
-  // User Management
-  router.post("/login", attemptLoginController.attemptLogin);
-  router.post("/logout", attemptLogoutController.attemptLogout);
-  router.post("/signup", attemptSignupController.attemptSignup);
+//   router.get('/:name', function(req, res, next) {
+//     res.render(path.join(__dirname,'public','examples',req.params.name,'index'));
+// });
 
-  // Platform Commands
-  router.get('/getexample', getExampleController.getExample);
-  router.get('/downloadapp', downloadAppController.downloadApp)
-  router.post('/synchrony', getSynchronyController.getSynchrony);
-
-
-  // Competition Management
-  router.post("/submit", submitController.submitGame);
-  router.post("/upload", uploadController.uploadFiles);
-  router.get('/getsubmissions', homeController.getHome);
-  router.post("/getsubmissions", getSubmissionsController.getSubmissions);
-  
+router.get("/", function(req, res, next) {
+  return res.render("index", { apps: appsDir});
+});
   return app.use("/", router);
 };
 

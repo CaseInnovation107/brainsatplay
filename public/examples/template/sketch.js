@@ -1,7 +1,5 @@
-let synchrony = 0;
 
-
-let connectToggle;
+  let connectToggle;
   let disconnectToggle;
   let museToggle;
 
@@ -28,23 +26,23 @@ let connectToggle;
     
     
       // Brains@Play Setup
-      // window.brainsatplay = Game('template')
-      brainsatplay.game.newGame('template')
-      brainsatplay.game.simulate(2);
+      game = new brainsatplay.Game('template')
+      game.newGame('template')
+      game.simulate(2);
       
       museToggle.mousePressed(async () => {
-          await brainsatplay.museClient.connect()
-          brainsatplay.game.connectBluetoothDevice(brainsatplay.museClient)
+          await game.bluetooth.devices['muse'].connect()
+          game.connectBluetoothDevice(brainsatplay.museClient)
       });
 
       connectToggle.mousePressed(() => {
-          brainsatplay.game.connect({'guestaccess': true})
+          game.connect({'guestaccess': true})
           disconnectToggle.show()
           connectToggle.hide()
       });
     
       disconnectToggle.mousePressed(() => {
-          brainsatplay.game.disconnect()
+          game.disconnect()
           disconnectToggle.hide()
           connectToggle.show()
       })
@@ -52,7 +50,7 @@ let connectToggle;
     
     draw = () => {
 
-      if (brainsatplay.game.bluetooth.device){
+      if (game.bluetooth.device){
           museToggle.hide()
       } else {
           museToggle.show()
@@ -61,21 +59,16 @@ let connectToggle;
       background(0);
     
       // Update Voltage Buffers and Derived Variables
-      brainsatplay.game.update();
-
-      // Update Synchrony 
-      brainsatplay.game.getMetric('synchrony').then((dict) => {
-          synchrony = dict.average;
-      })
+      game.update();
 
       // Draw Raw Voltage 
       let c;
-      let usernames = brainsatplay.game.getUsernames()
-      let viewedChannels = brainsatplay.game.usedChannels
+      let usernames = game.getUsernames()
+      let viewedChannels = game.usedChannels
       // console.log(viewedChannels)
       usernames.forEach((username, ind) => {
        c = colors[ind]
-       if (ind === brainsatplay.game.me.index){
+       if (ind === game.me.index){
           c = color('#1cc5cd')
           c.setAlpha(200)
        } else {
@@ -86,7 +79,7 @@ let connectToggle;
         stroke(c)
         textSize(100);
     
-        let brainData = brainsatplay.game.brains[brainsatplay.game.info.access].get(username).getVoltage()
+        let brainData = game.brains[game.info.access].get(username).getVoltage()
         viewedChannels.forEach((usedChannel,ind) => {
             let data = brainData[usedChannel.index]
             let dx = windowWidth / data.length;
@@ -110,14 +103,15 @@ let connectToggle;
       })
       
       // Draw Synchrony 
+      game.getMetric('synchrony').then((synchrony) => {
       noFill()
-      if (synchrony< 0) {
+      if (synchrony.average< 0) {
           stroke('blue')
       } else {
           stroke('red')
       }
       strokeWeight(2)
-      ellipse((windowWidth / 2), windowHeight/2, 10 * synchrony * Math.min(windowHeight / 2, windowWidth / 2));
+      ellipse((windowWidth / 2), windowHeight/2, 10 * synchrony.average * Math.min(windowHeight / 2, windowWidth / 2));
     
       noStroke()
       // Include Text for Raw Synchrony Value
@@ -128,24 +122,25 @@ let connectToggle;
       textStyle(ITALIC)
       textSize(10)
     
-      if (!brainsatplay.game.info.simulated) {
+      if (!game.info.simulated) {
           text('Live Data Stream', windowWidth / 2, windowHeight-80)
       } else {
           text('Synthetic Data Stream', windowWidth / 2, windowHeight-80)
       }
       
       textStyle(NORMAL)
-      if ((brainsatplay.game.info.brains === 0 || brainsatplay.game.info.brains === undefined) && brainsatplay.game.connection.status) {
+      if ((game.info.brains === 0 || game.info.brains === undefined) && game.connection.status) {
           text('No brains on the network...', windowWidth / 2, windowHeight/2)
-      } else if (brainsatplay.game.info.brains < 2 && brainsatplay.game.connection.status) {
+      } else if (game.info.brains < 2 && game.connection.status) {
           text('One brain on the network...', windowWidth / 2, windowHeight/2)
       } else {
-          if (synchrony !== undefined){
-              text(synchrony.toFixed(4), windowWidth / 2, windowHeight/2)
+          if (synchrony.average !== undefined){
+              text(synchrony.average.toFixed(4), windowWidth / 2, windowHeight/2)
             } else {
-              text(synchrony, windowWidth / 2, windowHeight/2)
+              text(synchrony.average, windowWidth / 2, windowHeight/2)
             }
       }
+    })
     }
 
     

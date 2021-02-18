@@ -1,13 +1,16 @@
+const webpack = require('webpack')
 const path = require('path');
 
 module.exports = {
   entry: {
-    main: './src/app.mjs',
+    main: path.join(__dirname, 'libraries', 'js','src','brainsatplay.mjs'),
   },
   output: {
     filename: 'brainsatplay.js',
     path: path.join(__dirname, 'libraries', 'js'),
     publicPath: '/',
+    library: 'brainsatplay',
+
   },
   module: {
     rules: [
@@ -37,5 +40,22 @@ module.exports = {
         ]
       }
     ]
-  }
+  },
+    resolve: {
+      fallback: {
+        "fs": false,
+        "os": require.resolve("os-browserify/browser"),
+        "http": require.resolve("stream-http"),
+        "stream": require.resolve("stream-browserify"),
+        "dgram": false,
+        "node-osc": false,
+        "readline": false,
+      } 
+    },
+    plugins: [
+      // fix "process is not defined" error:
+      new webpack.ProvidePlugin({
+        process: 'process/browser',
+      }),
+    ]
 };

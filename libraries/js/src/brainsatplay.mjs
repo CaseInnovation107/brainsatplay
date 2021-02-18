@@ -1,9 +1,15 @@
+import muse from "muse-js";
+import bci from "bcijs";
+
 export class Game {
     constructor(gameName = 'untitled') {
         this.initialize()
         this.gameName = gameName;
         this.bluetooth = {
-            device: undefined,
+            devices: {
+                'muse': new muse.MuseClient()
+            },
+            connected: false,
             channelNames: [],
         }
     }
@@ -118,7 +124,7 @@ export class Game {
     }
 
     simulate(count) {
-        if (!this.bluetooth.device){
+        if (!this.bluetooth.connected){
             this.add('me')
         }
         for (let i = 0; i < count-1; i++) {
@@ -189,7 +195,7 @@ export class Game {
         let usernames = this.getUsernames()
         usernames.forEach((username,ind) => {
             let user = this.brains['public'].get(username)
-            if (this.me.username !== username || this.bluetooth.device === undefined){
+            if (this.me.username !== username || !this.bluetooth.connected){
             for (let channel = 0; channel < user.channelNames.length; channel++) {
                 this.simulation.buffers.voltage[ind][channel].push(...this.generateSignal(new Array(n).fill(50), Array.from({length: n}, e => Math.random() * 50), this.simulation.sampleRate, this.simulation.duration, Array.from({length: n}, e => Math.random() * 2*Math.PI)));
             }
@@ -242,10 +248,10 @@ export class Game {
             }
             return dict
         } else {
-            if (this.brains[this.access].has(username)){
-                return this.brains[this.access].get(username).getMetric(metricName)              
+            if (this.brains[this.info.access].has(username)){
+                return this.brains[this.info.access].get(username).getMetric(metricName)              
             } else {
-                return this.brains[this.access].get(this.me.username).getMetric(metricName)              
+                return this.brains[this.info.access].get(this.me.username).getMetric(metricName)              
             }
         } 
     // } else {
@@ -415,11 +421,9 @@ export class Game {
     //
 
     async connectBluetoothDevice(connectedClient, type='muse'){
-        if (connectedClient){ // && typeof window !== 'undefined' && typeof process === 'object'
             if (type === 'muse'){
-        this.bluetooth.device = connectedClient
         this.bluetooth.channelNames = 'TP9,AF7,AF8,TP10,AUX' // Muse 
-        await this.bluetooth.device.start();
+        await this.bluetooth.devices['muse'].start();
         this.remove('me')
         if (this.connection.status){
             this.add('me', this.bluetooth.channelNames)
@@ -427,7 +431,8 @@ export class Game {
             this.add(this.me.username, this.bluetooth.channelNames)
         }
         this.updateBrainRoutine()
-        this.bluetooth.device.eegReadings.subscribe(r => {
+        this.bluetooth.connected = true;
+        this.bluetooth.devices[type].eegReadings.subscribe(r => {
             let me = this.brains[this.info.access].get(this.me.username)
             if (me !== undefined) {
                 if ((this.connection.status)) {
@@ -448,10 +453,8 @@ export class Game {
             }
           })
         }
-        
-        } 
         else {
-            console.error('A connected MuseClient object from the muse-js library must be passed.')
+            console.error('No Bluetooth compatibility with devices of type: ' + type)
         }
     }
 
@@ -581,7 +584,7 @@ export class Game {
         let resDict;
         resDict = await this.login(dict, url)
 
-        if (this.bluetooth.device){
+        if (this.bluetooth.connected){
             this.establishWebsocket('bidirectional')
         } else {
             this.establishWebsocket('interfaces')
@@ -853,11 +856,8 @@ class Brain {
         this.data = {}
 
         if (channelNames === undefined){
-            // if (typeof process === 'object'){
                 channelNames = 'TP9,AF7,AF8,TP10,AUX' // Muse 
-            // } else {
-            //     channelNames = 'Fz,C3,Cz,C4,Pz,PO7,Oz,PO8,F5,F7,F3,F1,F2,F4,F6,F8' // OpenBCI
-            // }
+                // 'Fz,C3,Cz,C4,Pz,PO7,Oz,PO8,F5,F7,F3,F1,F2,F4,F6,F8' // OpenBCI
         }
 
         channelNames = channelNames.toLowerCase().split(',')

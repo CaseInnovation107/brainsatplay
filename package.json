@@ -8,6 +8,7 @@
     "start": "webpack --mode production && node app.js"
   },
   "dependencies": {
+    "bcijs": "^1.8.0",
     "bleat": "^0.1.9",
     "body-parser": "^1.19.0",
     "connect-mongodb-session": "^2.4.1",
@@ -23,6 +24,7 @@
     "express": "^4.17.1",
     "express-handlebars": "^3.0.0",
     "express-session": "^1.17.1",
+    "fast-csv": "^2.5.0",
     "http-errors": "~1.6.3",
     "https": "^1.0.0",
     "mongodb": "^3.6.2",
@@ -32,8 +34,12 @@
     "multer-gridfs-storage": "^4.2.0",
     "muse-js": "^3.2.0",
     "node-fetch-polyfill": "^2.0.6",
+    "os-browserify": "^0.3.0",
+    "process": "^0.11.10",
     "script-loader": "^0.7.2",
     "serve-favicon": "^2.5.0",
+    "stream-browserify": "^3.0.0",
+    "stream-http": "^3.1.1",
     "style-loader": "^2.0.0",
     "uuid": "^8.3.1",
     "webpack": "^5.22.0",
