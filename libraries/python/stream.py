@@ -42,12 +42,13 @@ async def main():
     # Only Interfaces with Same USERID Access Data: 'private'
 
     DATA_STREAM = ['brainflow', 'arbitrary']
-    # Stream raw voltages using Brainflow: 'brainflow'
-    # EXTEND THIS ARRAY WITH ARBITRARY VALUES TO PASS TO THE FRONT END
+  # Stream raw voltages using Brainflow: 'brainflow'
+    # Extend this array with arbitrary fields to pass to the front end
 
-    def arbitraryEventFunction(brain): # PASS ARBITRARY DATA TO THE FRONT END
-        brain.passData('arbitrary', math.sin(time.time())) # include this line to pass data corresponding to the arbitrary fields in DATA_STREAM
-
+  def arbitraryEventFunction(brain): 
+    # Use this callback function to pass arbitrary data to the front end (corresponding to fields in DATA_STREAM)
+      brain.passData('arbitrary', math.sin(time.time()))
+      
     brain = asyncio.create_task(beginStream(BOARD, PORT, URL, LOGIN_DATA, GAME, ACCESS, DATA_STREAM,arbitraryEventFunction))
     await brain
 
