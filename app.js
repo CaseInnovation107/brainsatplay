@@ -32,7 +32,6 @@ app.set('games', games);
 app.set('brains', brains);
 app.set('private_brains', private_brains);
 app.set('interfaces', interfaces);
-// app.set('example', example);
 
 //CORS
 app.use(require("cors")()) // allow Cross-domain requests
