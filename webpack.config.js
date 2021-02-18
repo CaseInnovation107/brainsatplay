@@ -5,7 +5,7 @@ module.exports = {
     main: './src/app.mjs',
   },
   output: {
-    filename: '[name].bundle.js',
+    filename: 'brainsatplay.js',
     path: path.join(__dirname, 'libraries', 'js'),
     publicPath: '/',
   },
