@@ -84,8 +84,19 @@ app.use(function(req, res, next) {
 });
 
 // Set Routes
-const initRoutes = require("./routes/web");
-initRoutes(app);
+// const initRoutes = require("./routes/web");
+// initRoutes(app);
+let appsDir = {}
+fs.readdir(path.join(__dirname, 'public', 'examples'), (err, files) => {
+  files.forEach(file => {
+    let dir = path.join('/public', 'examples',file)
+    let info = fs.readFileSync(path.join(__dirname, 'public', 'examples',file,'info.json'));
+    appsDir[file] = JSON.parse(info)
+    appsDir[file].path = dir
+    });
+  });
+
+app.get("/", (req, res) => { res.render("index", { apps: appsDir}); });
 
 // development error handler
 if (app.get('env') === 'development') {
@@ -103,12 +114,17 @@ app.use(function(err, req, res, next) {
 
 // Static Middleware
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(path.join(__dirname, 'libraries','js')));
-app.use(express.static(path.join(__dirname, 'libraries','js','muse-js')));
+app.use(express.static(path.join(__dirname)));
+// app.use(express.static(path.join(__dirname, 'libraries','js','muse-js')));
 
-app.use(favicon(path.join(__dirname, 'public', 'favicons','favicon.ico')));
+app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+
 
 let Game = require(path.join(__dirname, 'libraries','js','Game.js'))
+
+app.set("view engine", "ejs"); 
+app.set("views", __dirname + "/views"); 
+
 
 // Setting the port
 app.set('port', port);

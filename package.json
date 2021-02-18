@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node app.js"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "webpack-dev-server --mode development --open",
+    "start": "webpack --mode production && node app.js"
   },
   "dependencies": {
     "bleat": "^0.1.9",
@@ -12,11 +14,12 @@
     "cookie-parser": "^1.4.5",
     "cors": "^2.8.5",
     "cron": "^1.8.2",
+    "css-loader": "^5.0.2",
     "d3-fetch": "^2.0.0",
     "debug": "~2.2.0",
     "discord.js": "^12.5.1",
     "dotenv": "^8.2.0",
-    "ejs": "^3.1.5",
+    "ejs": "^3.1.6",
     "express": "^4.17.1",
     "express-handlebars": "^3.0.0",
     "express-session": "^1.17.1",
@@ -29,8 +32,13 @@
     "multer-gridfs-storage": "^4.2.0",
     "muse-js": "^3.2.0",
     "node-fetch-polyfill": "^2.0.6",
+    "script-loader": "^0.7.2",
     "serve-favicon": "^2.5.0",
+    "style-loader": "^2.0.0",
     "uuid": "^8.3.1",
+    "webpack": "^5.22.0",
+    "webpack-cli": "^4.5.0",
+    "webpack-dev-server": "^3.11.2",
     "ws": "^7.4.0"
   },
   "main": "app.js",
