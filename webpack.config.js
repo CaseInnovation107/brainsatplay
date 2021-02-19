@@ -47,6 +47,8 @@ module.exports = {
         "os": require.resolve("os-browserify/browser"),
         "http": require.resolve("stream-http"),
         "stream": require.resolve("stream-browserify"),
+        "util": require.resolve("util/"),
+        "buffer": require.resolve("buffer/"),
         "dgram": false,
         "node-osc": false,
         "readline": false,
