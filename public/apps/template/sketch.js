@@ -50,7 +50,7 @@
     
     draw = () => {
 
-      if (game.bluetooth.device){
+      if (game.bluetooth.connected){
           museToggle.hide()
       } else {
           museToggle.show()

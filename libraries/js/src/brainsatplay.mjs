@@ -187,6 +187,9 @@ export class Game {
                 signal[point] += amplitudes[index] * Math.sin(2 * Math.PI * frequency * (point + phaseshifts[index]) / samplerate)
             }
         })
+
+        signal = signal.map(point => point/signal.length)
+
         return signal
     }
 
@@ -197,7 +200,7 @@ export class Game {
             let user = this.brains['public'].get(username)
             if (this.me.username !== username || !this.bluetooth.connected){
             for (let channel = 0; channel < user.channelNames.length; channel++) {
-                this.simulation.buffers.voltage[ind][channel].push(...this.generateSignal(new Array(n).fill(50), Array.from({length: n}, e => Math.random() * 50), this.simulation.sampleRate, this.simulation.duration, Array.from({length: n}, e => Math.random() * 2*Math.PI)));
+                this.simulation.buffers.voltage[ind][channel].push(...this.generateSignal(new Array(n).fill(1000), Array.from({length: n}, e => Math.random() * 50), this.simulation.sampleRate, this.simulation.duration, Array.from({length: n}, e => Math.random() * 2*Math.PI)));
             }
         }
         })
@@ -871,7 +874,7 @@ class Brain {
             }
         })
 
-        this.bufferSize = 1000
+        this.bufferSize = 500 // Samples
         this.buffers = {
             voltage: Array.from(Object.keys(this.eegCoordinates), e => {if (this.channelNames.includes(e)){
                 return Array(this.bufferSize).fill(0)
@@ -955,13 +958,13 @@ class Brain {
         }
     }
 
-    getMetric(metricName){
+    getMetric(metricName,relative=false){
             let dict = {};
             // Derive Channel Readouts
             if (metricName === 'power') {
-                dict.channels = this.power(true)
+                dict.channels = this.power(relative)
             } else if (['delta', 'theta', 'alpha', 'beta', 'gamma'].includes(metricName)) {
-                dict.channels = this.bandpower(metricName, false)
+                dict.channels = this.bandpower(metricName, relative)
             }
 
             // Get Values of Interest
@@ -1064,6 +1067,8 @@ class Brain {
 }
 
 const eegCoordinates = {
+
+    // From https://doi.org/10.1016/j.neuroimage.2009.02.006
     Fp1: [-21.2, 66.9, 12.1],
     Fpz: [1.4, 65.1, 11.3],
     Fp2: [24.3, 66.3, 12.5],
@@ -1130,7 +1135,6 @@ const eegCoordinates = {
     Oz: [0.3, -97.1, 8.7],
     O2: [25.0, -95.2, 6.2],
 
-    // From https://sccn.ucsd.edu/pipermail/eeglablist/2003/000008.html
-    Tp9: [-0.2852*100,	    0.8777*100,	   -0.3826*100],
-    Tp10: [-0.2853*100,	   -0.8777*100,	   -0.3826*100]
+    Tp9: [-63.6, -44.7, -4.0], //TP7
+    Tp10: [64.6, -45.4, -3.7] //TP8
 }

@@ -127,9 +127,11 @@ function openInfo() {
         <h4>${name}</h4>
         <p class="small">Created by <a href=${website} target="_blank">${author}</a>. See all examples <a href="https://brainsatplay.com/#game-nav" target="_blank">here</a></p>
         <p>${description}</p>
-        <h5>Source</h5>
     `;
 
+    if (Object.keys(links).length > 0){
+       html += `<h5>Source</h5>`
+    }
   for (let link in links) {
     if (link === 'github'){
       html += `
