@@ -1,5 +1,4 @@
-//Noel Case, 2-18-21
-//In this test file, I'm trying to plot just alpha waves with an expanding circle instead of alpha.
+
   let connectToggle;
   let disconnectToggle;
   let museToggle;
@@ -27,7 +26,7 @@
     
     
       // Brains@Play Setup
-      game = new brainsatplay.Game('template')
+      game = new brainsatplay.Game('alpha_battle')
       game.newGame('template')
       game.simulate(2);
       
@@ -51,7 +50,7 @@
     
     draw = () => {
 
-      if (game.bluetooth.device){
+      if (game.bluetooth.connected){
           museToggle.hide()
       } else {
           museToggle.show()
@@ -102,11 +101,50 @@
               )
           })
       })
+      
+       //Drawing alpha
+        game.getMetric('alpha').then((alpha) => {
+           noFill()
+           strokeWeight(2)
+           stroke(0,255,alphaHueShift)
+           var alphaHueShift = int(alpha.average*500);
+           ellipse((windowWidth / 2), windowHeight/2, 10 * alpha.average * Math.min(windowHeight / 2, windowWidth / 2));
 
-      game.getMetric('alpha').then((alpha) => {
-          ellipse((windowWidth / 2), windowHeight/2, 10 * alpha.average * Math.min(windowHeight / 2, windowWidth / 2));
-          strokeWeight(2);
-          nofill();
-          stroke('green');
-        
+      
+      // Include Text for Raw Alpha Value
+      fill('white')
+      textStyle(BOLD)
+      textSize(15)
+      text('Alpha', windowWidth / 2, windowHeight-100)
+      textStyle(ITALIC)
+      textSize(10)
+    
+      if (!game.info.simulated) {
+          text('Live Data Stream', windowWidth / 2, windowHeight-80)
+      } else {
+          text('Synthetic Data Stream', windowWidth / 2, windowHeight-80)
       }
+      
+      textStyle(NORMAL)
+      if ((game.info.brains === 0 || game.info.brains === undefined) && game.connection.status) {
+          text('No brains on the network...', windowWidth / 2, windowHeight/2)
+      } else if (game.info.brains < 2 && game.connection.status) {
+          text('One brain on the network...', windowWidth / 2, windowHeight/2)
+      } else {
+          if (alpha.average !== undefined){
+              text(alpha.average.toFixed(4), windowWidth / 2, windowHeight/2)
+            } else {
+              text(alpha.average, windowWidth / 2, windowHeight/2)
+            }
+      }
+    })
+    }
+
+
+    windowResized = () => {
+      resizeCanvas(windowWidth, windowHeight);
+      connectToggle.position(windowWidth-25-connectToggle.width, windowHeight-125-connectToggle.height);
+      disconnectToggle.position(windowWidth-25-disconnectToggle.width, windowHeight-125-disconnectToggle.height);
+      museToggle.position(windowWidth-25-museToggle.width, windowHeight-50-museToggle.height);
+  }
+

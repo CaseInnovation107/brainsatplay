@@ -1,4 +1,3 @@
-""" 
 This module defines :class:'Brain'
 """
 
@@ -47,7 +46,7 @@ class Brain(object):
 
         # Set default BCI message
         message = {
-                    'destination': 'bci', 
+                    'destination': 'bci',
                     'id': self.id,
                     'data': {}
             }
@@ -82,7 +81,7 @@ class Brain(object):
             cookieDict['id'] = self.id
 
             # Convert Cookies into Proper Format
-            cookies = ""        
+            cookies = ""
             for cookie in cookieDict:
                 if isinstance(cookieDict[cookie],list):
                     cookie_in_progress = str(cookie + '=')
@@ -94,7 +93,7 @@ class Brain(object):
                             cookies += cookie_in_progress + '; '
                 else:
                     cookies += str(cookie + '=' + cookieDict[cookie] + '; ')
-                
+
             # Add connectionType Cookie
             o = urlparse(url)
             if (o.scheme == 'http'):
@@ -105,10 +104,10 @@ class Brain(object):
                 print('not a valid url scheme')
 
             async with websockets.connect(uri,ping_interval=None, extra_headers=[('cookie', cookies)]) as websocket:
-                
+
                 msg = await websocket.recv()
 
-                try: 
+                try:
                     msg = json.loads(msg)
                     print('\n\n' + str(msg['msg']) + '\n\n')
                 except:
@@ -121,7 +120,7 @@ class Brain(object):
                 while True:
 
                     message = {
-                            'destination': 'bci', 
+                            'destination': 'bci',
                             'id': self.id,
                             'data': {}
                     }
@@ -135,13 +134,13 @@ class Brain(object):
                             t = data[self.board.time_channel]
 
                             if self.all_channels:
-                                data = data[self.board.eeg_channels] 
+                                data = data[self.board.eeg_channels]
                             else:
                                 data = data[self.board.eeg_channels][self.channels]
 
                             for entry in data:
                                 pass_data.append((entry).tolist())
-                                
+
                             message['data']['signal'] = pass_data
                             message['data']['time'] = t.tolist()
 
@@ -150,9 +149,9 @@ class Brain(object):
                             if (self.data_to_pass[item] != None):
                                 message['data'][item] = self.data_to_pass[item]
                                 self.data_to_pass[item] = None
-                    
+
                     message = json.dumps(message, separators=(',', ':'))
-                    
+
                     # (Re)Open Websocket Connection
                     if not websocket.open:
                         try:
@@ -165,7 +164,7 @@ class Brain(object):
 
 
     def connect(self, board='SYNTHETIC_BOARD', port = None):
-        
+
         params = BrainFlowInputParams()
         board_id = BoardIds[board].value
 

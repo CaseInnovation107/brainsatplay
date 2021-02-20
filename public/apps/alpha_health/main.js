@@ -1,3 +1,5 @@
+// Noel Case, 2-20-21
+// This is a prototype of an app for Brains@Play that measures alpha waves for two users.
 
   let connectToggle;
   let disconnectToggle;
@@ -26,7 +28,7 @@
     
     
       // Brains@Play Setup
-      game = new brainsatplay.Game('template')
+      game = new brainsatplay.Game('alpha_battle')
       game.newGame('template')
       game.simulate(2);
       
@@ -47,7 +49,33 @@
           connectToggle.show()
       })
     }
-    
+  /*    
+    //WebSocket Setup:
+    //Example code from Git repo: Vuka951/tutorial-code
+
+    // Create WebSocket connection.
+    const socket = new WebSocket('ws://localhost:5000');
+
+    // Connection opened
+    socket.addEventListener('open', function (event) {
+        console.log('websocket connected')
+    });
+
+    // Connection closed
+    socket.addEventListener('close', function (event) {
+        console.log('websocket connected')
+    });*/
+
+
+    // Listen for messages
+    socket.addEventListener('message', function (event) {
+        console.log('Message from server ', event.data);
+    });
+    // Send a msg to the websocket
+    const sendMsg = () => {
+        socket.send('Hello from Client1!');
+    }*/
+
     draw = () => {
 
       if (game.bluetooth.connected){
@@ -102,23 +130,20 @@
           })
       })
       
-      // Draw Synchrony 
-      game.getMetric('synchrony').then((synchrony) => {
-      noFill()
-      if (synchrony.average< 0) {
-          stroke('blue')
-      } else {
-          stroke('red')
-      }
-      strokeWeight(2)
-      ellipse((windowWidth / 2), windowHeight/2, 10 * synchrony.average * Math.min(windowHeight / 2, windowWidth / 2));
-    
-      noStroke()
-      // Include Text for Raw Synchrony Value
+       //Drawing alpha
+        game.getMetric('alpha').then((alpha) => {
+           noFill()
+           strokeWeight(2)
+           stroke(0,255,alphaHueShift)
+           var alphaHueShift = int(alpha.average*500);
+           ellipse((windowWidth / 2), windowHeight/2, 10 * alpha.average * Math.min(windowHeight / 2, windowWidth / 2));
+
+      
+      // Include Text for Raw Alpha Value
       fill('white')
       textStyle(BOLD)
       textSize(15)
-      text('Synchrony', windowWidth / 2, windowHeight-100)
+      text('Alpha', windowWidth / 2, windowHeight-100)
       textStyle(ITALIC)
       textSize(10)
     
@@ -134,16 +159,16 @@
       } else if (game.info.brains < 2 && game.connection.status) {
           text('One brain on the network...', windowWidth / 2, windowHeight/2)
       } else {
-          if (synchrony.average !== undefined){
-              text(synchrony.average.toFixed(4), windowWidth / 2, windowHeight/2)
+          if (alpha.average !== undefined){
+              text(alpha.average.toFixed(4), windowWidth / 2, windowHeight/2)
             } else {
-              text(synchrony.average, windowWidth / 2, windowHeight/2)
+              text(alpha.average, windowWidth / 2, windowHeight/2)
             }
       }
     })
     }
 
-    
+
     windowResized = () => {
       resizeCanvas(windowWidth, windowHeight);
       connectToggle.position(windowWidth-25-connectToggle.width, windowHeight-125-connectToggle.height);
