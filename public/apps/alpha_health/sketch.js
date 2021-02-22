@@ -11,8 +11,30 @@
   setup = () => {
 
     for (let i = 0; i < 50; i++){
-      colors.push(color(Math.random()*255,Math.random()*255,Math.random()*255))
-    }
+      colors.push(color(Math.random()*255,Math.random()*255,Math.random()*255))}
+  //Audio Setup:
+  let polySynth;
+  var volMain = 0.2;
+  var note = 52.125;      
+  let cnv = createCanvas(100, 100);
+  //cnv.mousePressed(playSynth);
+  background(220);
+  textAlign(CENTER);
+  text('health drop', width/2, height/2);
+
+  healthdrop = new p5.PolySynth();
+  healthdrop.setADSR(0.2,0.15,0.3,0.5);
+
+  drone1 = new p5.Oscillator('sine');
+  drone2 = new p5.Oscillator('sine');
+  drone3 = new p5.Oscillator('sine');
+  drone4 = new p5.Oscillator('sine');
+    
+  drone1.amp(0);
+  drone2.amp(0);
+  drone3.amp(0);  
+  drone4.amp(0);
+
 
       // P5 Setup
       createCanvas(400, 400);
@@ -20,13 +42,40 @@
       resizeCanvas(windowWidth, windowHeight);
       connectToggle = createButton('Connect to Server');
       museToggle = createButton('Connect Muse');
+      audioToggle = createButton('Audio On');
+      audioOffToggle = createButton('Audio Off');
       disconnectToggle = createButton('Disconnect');
       connectToggle.position(windowWidth-25-connectToggle.width, windowHeight-125-connectToggle.height);
       disconnectToggle.position(windowWidth-25-disconnectToggle.width, windowHeight-125-disconnectToggle.height);
       museToggle.position(windowWidth-25-museToggle.width, windowHeight-50-museToggle.height);
+    audioToggle.position(windowWidth/2 - audioToggle.width/2, windowHeight/6 - connectToggle.height);
+    audioOffToggle.position(windowWidth/2 - audioToggle.width/2, windowHeight/6 - connectToggle.height);
       disconnectToggle.hide()
+      audioOffToggle.hide()
+     
+      audioToggle.mousePressed(() => {
+      userStartAudio();
+      drone1.start(0, note); 
+      drone2.start(0, 2*note - 0.25);
+      drone3.start(0, 3*note - 0.25);
+      drone4.start(0, 5*note);
     
+      drone1.amp(volMain*0.15, 0.5);
+      drone2.amp(volMain*0.15, 0.5);
+      drone3.amp(volMain*0.07, 0.5);
+      drone4.amp(volMain*0.05, 0.5);
+      audioOffToggle.show()
+      audioToggle.hide()
+  });
     
+    audioOffToggle.mousePressed(() => {
+    drone1.stop(0.1); 
+    drone2.stop(0.1);
+    drone3.stop(0.1);
+    drone4.stop(0.1);
+    audioToggle.show()
+    audioOffToggle.hide()
+});
       // Brains@Play Setup
       game = new brainsatplay.Game('alpha_battle')
       game.newGame('template')
@@ -49,33 +98,7 @@
           connectToggle.show()
       })
     }
-  /*    
-    //WebSocket Setup:
-    //Example code from Git repo: Vuka951/tutorial-code
-
-    // Create WebSocket connection.
-    const socket = new WebSocket('ws://localhost:5000');
-
-    // Connection opened
-    socket.addEventListener('open', function (event) {
-        console.log('websocket connected')
-    });
-
-    // Connection closed
-    socket.addEventListener('close', function (event) {
-        console.log('websocket connected')
-    });*/
-
-
-    // Listen for messages
-    socket.addEventListener('message', function (event) {
-        console.log('Message from server ', event.data);
-    });
-    // Send a msg to the websocket
-    const sendMsg = () => {
-        socket.send('Hello from Client1!');
-    }*/
-
+  
     draw = () => {
 
       if (game.bluetooth.connected){
@@ -175,4 +198,18 @@
       disconnectToggle.position(windowWidth-25-disconnectToggle.width, windowHeight-125-disconnectToggle.height);
       museToggle.position(windowWidth-25-museToggle.width, windowHeight-50-museToggle.height);
   }
+
+ playSynth = () => {
+  // note duration (in seconds)
+  let dur = 0.5;
+  // time from now (in seconds)
+  let time = 0;
+  // velocity (volume, from 0 to 1)
+  let vel = 0.8;
+  
+  // notes can overlap with each other
+  polySynth.play(1.06*2*note, vel, 0, dur);
+  polySynth.play(1.06*3*note, vel, 0, dur);
+
+ }
 
